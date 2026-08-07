@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+python-dotenv
+
+langchain
+langgraph
+langchain-community
+
+chromadb
+
+google-generativeai
+
+pydantic
+python-multipart
