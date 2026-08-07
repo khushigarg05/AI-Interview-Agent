@@ -1,1 +1,9 @@
-# vicodathon_interview_ps2
+README.md
+
+PROMPTS.md
+
+frontend/
+
+backend/
+
+docs/
