@@ -1,5 +1,9 @@
 import uuid
 import time
+import json
+import logging
+import threading
+import urllib.request
 from typing import Dict, Any, Optional, List
 
 from backend.config import settings
@@ -19,13 +23,58 @@ from backend.models.response_models import (
     FeedbackResponse,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class BreethService:
     """
     Central Orchestrator for the AI Interview Agent.
     Coordinates between Session State, Candidate Profiles, LLM Services, and 31-Day RAG Knowledge Base.
     Supports both the single official POST /api/interview endpoint and modular REST endpoints.
+    Integrates with thebreeth.com persistent memory API.
     """
+
+    def _log_to_breeth(self, session_id: str, role: str, content: str, metadata: Optional[Dict[str, Any]] = None):
+        """Asynchronously logs interaction to thebreeth.com persistent memory API."""
+        if not settings.BREETH_API_KEY or settings.BREETH_API_KEY == "your_breeth_api_key_here":
+            return
+
+        def _send():
+            endpoints = [
+                "https://api.thebreeth.com/v1/episodes",
+                "https://thebreeth.com/api/v1/episodes",
+                "https://thebreeth.com/api/v1/facts",
+            ]
+            payload = json.dumps({
+                "session_id": session_id,
+                "role": role,
+                "content": content,
+                "metadata": metadata or {},
+                "extract_intent": True
+            }).encode("utf-8")
+
+            for ep in endpoints:
+                try:
+                    req = urllib.request.Request(
+                        ep,
+                        data=payload,
+                        headers={
+                            "Content-Type": "application/json",
+                            "Authorization": f"Bearer {settings.BREETH_API_KEY}",
+                            "x-api-key": settings.BREETH_API_KEY,
+                            "User-Agent": "InterviewIQ-Agent/1.0"
+                        },
+                        method="POST"
+                    )
+                    with urllib.request.urlopen(req, timeout=3) as resp:
+                        if resp.status in [200, 201]:
+                            logger.info(f"Breeth episode logged successfully: {resp.status}")
+                            break
+                except Exception:
+                    pass
+
+        # Run in background thread to ensure zero latency impact on candidate turns
+        threading.Thread(target=_send, daemon=True).start()
 
     # -------------------------------------------------------------
     # OFFICIAL SINGLE ENDPOINT HANDLER: POST /api/interview
@@ -101,6 +150,9 @@ class BreethService:
             )
             session_service.add_question(session_id, first_q.model_dump())
 
+            # Log initial turn to Breeth Memory
+            self._log_to_breeth(session_id, "system", f"Started interview for {name} ({job_role}) on {topic}", {"candidate_id": candidate_id, "day": start_day_num})
+
             welcome_reply = (
                 f"Welcome {name}! Let's begin your technical interview for the {job_role} position.\n\n"
                 f"Question 1 (Day {start_day_num} - {topic}):\n{first_q_text}"
@@ -119,6 +171,7 @@ class BreethService:
         if candidate_answer.lower() in ["end", "end session", "exit", "finish", "done", "terminate", "quit"]:
             session_service.end_session(session_id)
             feedback_data = self._generate_official_feedback(session)
+            self._log_to_breeth(session_id, "user", candidate_answer, {"action": "early_termination"})
             return InterviewTurnResponse(
                 reply="Interview completed. Thank you for your answers. Your final evaluation report is generated.",
                 done=True,
@@ -133,6 +186,9 @@ class BreethService:
         last_question = questions[-1] if questions else {}
         last_q_text = last_question.get("question_text", "Technical Question")
         topic = last_question.get("topic", "AI Fundamentals")
+
+        # Log candidate response to Breeth
+        self._log_to_breeth(session_id, "user", candidate_answer, {"topic": topic, "question": last_q_text})
 
         # Evaluate current response
         eval_result = llm_service.evaluate_response(
@@ -162,6 +218,7 @@ class BreethService:
         if total_asked >= settings.MIN_QUESTIONS or total_answers >= settings.MIN_QUESTIONS:
             session_service.end_session(session_id)
             feedback_data = self._generate_official_feedback(session)
+            self._log_to_breeth(session_id, "assistant", f"Completed interview. Score: {feedback_data.summary}", {"done": True})
             return InterviewTurnResponse(
                 reply="Interview completed! Thank you for your comprehensive answers. Your final technical evaluation and performance feedback report have been generated.",
                 done=True,
@@ -192,6 +249,7 @@ class BreethService:
             session_service.add_question(session_id, follow_up_q.model_dump())
 
             reply = f"Thanks for the answer. {evaluation_text}\n\nFollow-up Question:\n{follow_up_text}"
+            self._log_to_breeth(session_id, "assistant", reply, {"is_follow_up": True})
             return InterviewTurnResponse(
                 reply=reply,
                 done=False,
@@ -233,6 +291,7 @@ class BreethService:
         session_service.add_question(session_id, next_q.model_dump())
 
         reply = f"Good. {evaluation_text}\n\nNext Question ({total_asked + 1}/{settings.MIN_QUESTIONS} - Day {next_day_num} {next_topic}):\n{next_q_text}"
+        self._log_to_breeth(session_id, "assistant", reply, {"topic": next_topic, "day": next_day_num})
         return InterviewTurnResponse(
             reply=reply,
             done=False,
@@ -388,7 +447,7 @@ class BreethService:
 
         next_q = QuestionItem(
             question_id=f"q_{uuid.uuid4().hex[:8]}",
-            question_text=q_text,
+            question_text=next_q_text,
             topic=topic,
             difficulty="medium",
             question_number=current_count + 1,
