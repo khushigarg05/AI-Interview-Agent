@@ -1,0 +1,38 @@
+{
+  "candidate_id": "C002",
+  "name": "Priya Patel",
+  "email": "priya.patel@example.com",
+  "role": "Frontend Developer",
+  "experience": "1.5 years",
+  "tech_stack": ["JavaScript", "TypeScript", "React", "Next.js", "TailwindCSS", "Redux Toolkit"],
+  "learning_progress": {
+    "day_1": {
+      "topic": "JavaScript Deep Dive",
+      "status": "completed",
+      "score": 88,
+      "strengths": ["Closures", "Event Loop", "Promises"],
+      "weaknesses": ["Prototypes"]
+    },
+    "day_2": {
+      "topic": "React State Management",
+      "status": "completed",
+      "score": 82,
+      "strengths": ["Redux Toolkit", "Context API"],
+      "weaknesses": ["Zustand"]
+    },
+    "day_3": {
+      "topic": "Frontend Performance & SSR",
+      "status": "completed",
+      "score": 75,
+      "strengths": ["Next.js App Router", "Image Optimization"],
+      "weaknesses": ["LCP tuning", "Web Workers"]
+    },
+    "day_4": {
+      "topic": "REST APIs & Client State",
+      "status": "completed",
+      "score": 80,
+      "strengths": ["TanStack Query", "Axios interceptors"],
+      "weaknesses": ["GraphQL caching"]
+    }
+  }
+}

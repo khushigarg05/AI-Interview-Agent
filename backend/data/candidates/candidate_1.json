@@ -1,0 +1,38 @@
+{
+  "candidate_id": "C001",
+  "name": "Rahul Sharma",
+  "email": "rahul.sharma@example.com",
+  "role": "Full Stack Developer",
+  "experience": "2 years",
+  "tech_stack": ["Python", "FastAPI", "React", "Next.js", "MongoDB", "PostgreSQL"],
+  "learning_progress": {
+    "day_1": {
+      "topic": "Python Core & OOP",
+      "status": "completed",
+      "score": 85,
+      "strengths": ["OOP principles", "Decorators"],
+      "weaknesses": ["Generators memory footprint"]
+    },
+    "day_2": {
+      "topic": "Data Structures & Algorithms",
+      "status": "completed",
+      "score": 72,
+      "strengths": ["Arrays", "HashMaps"],
+      "weaknesses": ["Tree traversal", "Dynamic Programming"]
+    },
+    "day_3": {
+      "topic": "REST APIs & FastAPI",
+      "status": "completed",
+      "score": 90,
+      "strengths": ["FastAPI routing", "Pydantic validation", "Async endpoints"],
+      "weaknesses": ["OAuth2 flow edge cases"]
+    },
+    "day_4": {
+      "topic": "React & Frontend Architecture",
+      "status": "completed",
+      "score": 68,
+      "strengths": ["Component creation", "useState"],
+      "weaknesses": ["useEffect dependency array", "Custom Hooks"]
+    }
+  }
+}
