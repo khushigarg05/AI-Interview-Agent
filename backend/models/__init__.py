@@ -1,6 +1,3 @@
-"""
-Pydantic Schemas for AI Interview Agent
-"""
 from .request_models import (
     StartInterviewRequest,
     NextQuestionRequest,
