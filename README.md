@@ -4,6 +4,19 @@ InterviewIQ AI is a production-grade, autonomous technical interview platform po
 
 ---
 
+## 🌐 Live Production Cloud Deployment (Render 24/7)
+
+The backend is permanently deployed and accessible 24/7 on the cloud:
+
+| Service | Live Cloud URL Link | Status |
+|---|---|---|
+| 🚀 **Official API Endpoint** | [`https://ai-interview-agent-rf0q.onrender.com/api/interview`](https://ai-interview-agent-rf0q.onrender.com/api/interview) | 🟢 Live |
+| 📋 **Interactive Swagger UI** | [`https://ai-interview-agent-rf0q.onrender.com/docs`](https://ai-interview-agent-rf0q.onrender.com/docs) | 🟢 Live |
+| 🩺 **Health Check Probe** | [`https://ai-interview-agent-rf0q.onrender.com/health`](https://ai-interview-agent-rf0q.onrender.com/health) | 🟢 Live |
+| 📊 **Feedback Report API** | [`https://ai-interview-agent-rf0q.onrender.com/feedback/{session_id}`](https://ai-interview-agent-rf0q.onrender.com/feedback/test-sess-1) | 🟢 Live |
+
+---
+
 ## 🌟 Key Features
 
 - **Official Unified Endpoint (`POST /api/interview`):** Strict conformance to single-endpoint interview orchestrator specifications.
@@ -38,6 +51,7 @@ AI-Interview-Agent/
 │       ├── rag_service.py        # Curriculum RAG retriever
 │       ├── candidate_service.py  # Candidate loader
 │       └── session_service.py    # In-memory session state manager
+├── documentation/                # Complete API, Architecture, Workflow & Presentation Docs
 ├── PROMPTS.md                    # Complete prompt engineering & AI usage log
 └── README.md                     # Project documentation
 ```
@@ -47,9 +61,17 @@ AI-Interview-Agent/
 ## 🚀 Quick Start (Local Setup)
 
 ### 1. Create and Activate Virtual Environment
+
+**macOS / Linux:**
 ```bash
 python3.11 -m venv venv
 source venv/bin/activate
+```
+
+**Windows (PowerShell):**
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
 ```
 
 ### 2. Install Dependencies
@@ -72,8 +94,8 @@ PORT=8000
 uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-- **Interactive API Docs (Swagger):** `http://localhost:8000/docs`
-- **Health Check:** `http://localhost:8000/health`
+- **Local Interactive API Docs:** `http://localhost:8000/docs`
+- **Local Health Check:** `http://localhost:8000/health`
 
 ---
 
