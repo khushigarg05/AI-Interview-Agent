@@ -25,6 +25,16 @@ export default function LandingPage() {
   const [navigatingId, setNavigatingId] = useState<string | null>(null);
   const [showAllModal, setShowAllModal] = useState<boolean>(false);
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile>(mockCandidates[0]);
+  const [showAddCandidate, setShowAddCandidate] = useState(false);
+
+const [addedCandidates, setAddedCandidates] = useState<Candidate[]>([]);
+
+const [newCandidate, setNewCandidate] = useState({
+  name: '',
+  role: '',
+  progress: '0',
+  skippedTopics: '',
+});
 
   const handleStartInterview = async (candidate: CandidateProfile) => {
     setNavigatingId(candidate.id);
@@ -74,7 +84,7 @@ export default function LandingPage() {
     const progress = newCandidate.progress.trim();
     const skippedTopics = newCandidate.skippedTopics
       .split(',')
-      .map((topic) => topic.trim())
+      .map((topic: string) => topic.trim())
       .filter(Boolean);
 
     if (!name || !role) {
