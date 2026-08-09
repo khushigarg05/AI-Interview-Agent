@@ -1,37 +1,56 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
 
 export const Navbar: React.FC = () => {
   return (
-    <header className="bg-[#5E5653] text-white border-b border-[#302C2A] sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <header className="w-full border-b border-white/10 bg-[#302C2A]">
+      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+
         {/* Left: Brand Logo & Title */}
-        <div className="flex items-center space-x-3">
-          <Link href="/" className="flex items-center space-x-2 text-white font-semibold text-lg tracking-tight hover:opacity-90 transition-opacity">
-            <div className="w-8 h-8 rounded bg-[#6B7C98] flex items-center justify-center text-white font-bold text-sm border border-white/20">
-              AI
-            </div>
-            <span>AI Interview Agent</span>
-          </Link>
-        </div>
+        <Link href="/" className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded bg-[#AB978C] flex items-center justify-center text-[#302C2A] font-bold">
+            AI
+          </div>
+
+          <span className="text-white font-semibold">
+            AI Interview Agent
+          </span>
+        </Link>
 
         {/* Center: Navigation Links */}
         <nav className="hidden md:flex items-center space-x-8 text-sm font-medium">
-          <Link href="/" className="text-white hover:text-[#AB978C] transition-colors">
-            Home
+          <Link
+            href="/"
+            className="text-white hover:text-[#AB978C] transition-colors"
+          >
+            Overview
           </Link>
-          <Link href="/setup" className="text-white/80 hover:text-[#AB978C] transition-colors">
+
+          <Link
+            href="/setup"
+            className="text-white/80 hover:text-[#AB978C] transition-colors"
+          >
             Interview Setup
           </Link>
-          <Link href="/interview/session-1" className="text-white/80 hover:text-[#AB978C] transition-colors">
-            Live Interview Room
+
+          <Link
+            href="/setup"
+            className="text-white/80 hover:text-[#AB978C] transition-colors"
+          >
+            Live Interview
           </Link>
-          <Link href="/feedback/session-1" className="text-white/80 hover:text-[#AB978C] transition-colors">
-            Feedback Report
+
+          <Link
+            href="/setup"
+            className="text-white/80 hover:text-[#AB978C] transition-colors"
+          >
+            Feedback
           </Link>
         </nav>
 
-        {/* Right: Candidate Profile Pill */}
+        {/* Right: Candidate Profile */}
         <div className="flex items-center space-x-4">
           <Link
             href="/setup"
@@ -39,14 +58,18 @@ export const Navbar: React.FC = () => {
           >
             Start Interview
           </Link>
-          
+
           <div className="flex items-center space-x-2 pl-3 border-l border-white/20">
             <div className="w-7 h-7 rounded-full bg-[#AB978C] flex items-center justify-center text-[#302C2A] text-xs font-bold">
               K
             </div>
-            <span className="text-xs font-medium text-white/90">Khushi</span>
+
+            <span className="text-xs font-medium text-white/90">
+              Khushi
+            </span>
           </div>
         </div>
+
       </div>
     </header>
   );
