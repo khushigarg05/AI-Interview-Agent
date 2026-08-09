@@ -10,8 +10,18 @@ import { mockCandidates, all20Candidates } from '@/lib/mockData';
 import { startInterview } from '@/lib/api';
 import { CandidateProfile } from '@/lib/types';
 
+type Candidate = {
+  id: string;
+  name: string;
+  role: string;
+  progress: string;
+  skippedTopics: string[];
+  backendPayload: any;
+};
+
 export default function LandingPage() {
   const router = useRouter();
+
   const [navigatingId, setNavigatingId] = useState<string | null>(null);
   const [showAllModal, setShowAllModal] = useState<boolean>(false);
   const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile>(mockCandidates[0]);
@@ -22,17 +32,20 @@ export default function LandingPage() {
       // Generate a unique sessionId
       const sessionId = `sess-${candidate.id}-${Date.now()}`;
 
-      // Call startInterview() with backend payload
-      const response = await startInterview(sessionId, candidate.backendPayload);
+      // Call backend
+      const response = await startInterview(
+        sessionId,
+        candidate.backendPayload
+      );
 
-      // Save initial reply and session info to sessionStorage
+      // Save first AI response
       const initialTurns = [
         {
           id: '1',
           sender: 'interviewer' as const,
           senderName: 'AI Interviewer',
-          text: response.reply
-        }
+          text: response.reply,
+        },
       ];
       sessionStorage.setItem(`turns_${sessionId}`, JSON.stringify(initialTurns));
       sessionStorage.setItem(`session_candidate_${sessionId}`, candidate.id);
@@ -50,6 +63,74 @@ export default function LandingPage() {
     } finally {
       setNavigatingId(null);
     }
+  };
+
+  // Handle Add Candidate
+  const handleAddCandidate = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const name = newCandidate.name.trim();
+    const role = newCandidate.role.trim();
+    const progress = newCandidate.progress.trim();
+    const skippedTopics = newCandidate.skippedTopics
+      .split(',')
+      .map((topic) => topic.trim())
+      .filter(Boolean);
+
+    if (!name || !role) {
+      alert('Please enter candidate name and job role.');
+      return;
+    }
+
+    // Create safe ID
+    const candidateId =
+      name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '') +
+      `-${Date.now()}`;
+
+    /*
+     * Backend payload.
+     *
+     * This follows the same general structure used by the
+     * existing interview API.
+     */
+    const backendPayload = {
+      candidate: {
+        member: {
+          id: candidateId,
+          name: name,
+          jobRole: role,
+        },
+        missions: [],
+      },
+    };
+
+    const candidate: Candidate = {
+      id: candidateId,
+      name,
+      role,
+      progress: `${progress}%`,
+      skippedTopics,
+      backendPayload,
+    };
+
+    setAddedCandidates((previous) => [
+      ...previous,
+      candidate,
+    ]);
+
+    // Reset form
+    setNewCandidate({
+      name: '',
+      role: '',
+      progress: '0',
+      skippedTopics: '',
+    });
+
+    // Close modal
+    setShowAddCandidate(false);
   };
 
   return (
@@ -77,7 +158,10 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* Main Container */}
+      {/* =========================
+          MAIN
+      ========================== */}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-10 flex-1 w-full">
         
         {/* Hero Section */}
@@ -217,10 +301,12 @@ export default function LandingPage() {
                       {!isStarting && <span>▶</span>}
                     </Button>
                   </div>
+
                 </div>
               );
             })}
           </div>
+
         </div>
       </div>
 
