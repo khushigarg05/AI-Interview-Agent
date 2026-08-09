@@ -13,6 +13,8 @@ The complete InterviewIQ AI application is deployed and accessible online.
 | Service | Live URL | Status |
 |---|---|---|
 | 🚀 **Live Frontend / Demo** | https://ai-interview-agent-f1iema3e7-ai-interview-agent1.vercel.app/setup | 🟢 Live |
+🌐 Live Demo: https://ai-interview-agent-f1iema3e7-ai-interview-agent1.vercel.app
+🎯 Start Interview: https://ai-interview-agent-f1iema3e7-ai-interview-agent1.vercel.app/setup
 | ⚡ **Backend API** | https://ai-interview-agent-rf0q.onrender.com/api/interview | 🟢 Live |
 | 📋 **Interactive Swagger UI** | https://ai-interview-agent-rf0q.onrender.com/docs | 🟢 Live |
 | 🩺 **Health Check** | https://ai-interview-agent-rf0q.onrender.com/health | 🟢 Live |
@@ -1199,8 +1201,11 @@ Built for **VicoDathon — A 48hrs Hackathon**
 ---
 
 # 🔗 Project Links
+###🌐 Live Demo:
 
-### 🌐 Live Demo
+https://ai-interview-agent-f1iema3e7-ai-interview-agent1.vercel.app
+
+###🎯 Start Interview: 
 
 https://ai-interview-agent-f1iema3e7-ai-interview-agent1.vercel.app/setup
 
