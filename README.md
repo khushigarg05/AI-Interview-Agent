@@ -1,18 +1,18 @@
 # 🤖 InterviewIQ AI — Adaptive Technical Interview Agent
 
-> **An AI-powered technical interview platform that transforms candidate learning data into personalized interviews, evaluates responses in real time, asks intelligent follow-up questions, and generates actionable feedback.**
+> **An AI-powered technical interview platform that transforms candidate learning data into personalized interviews, evaluates responses in real time, asks adaptive follow-up questions, and generates actionable feedback.**
 
-**AI Interview Agent • Adaptive Evaluation • RAG • Groq/Llama • FastAPI • Next.js**
+**AI Interview Agent · Adaptive Evaluation · RAG · Groq · FastAPI · Next.js**
 
 ---
 
-# 🌐 Live Demo
+## 🌐 Live Demo
 
-🚀 **Start Interview:**
-https://ai-interview-agent-f1iema3e7-ai-interview-agent1.vercel.app/setup
+🚀 **Production:**
+https://ai-interview-agent-e6x4ff0hp-ai-interview-agent1.vercel.app/
 
-🌐 **Application:**
-https://ai-interview-agent-f1iema3e7-ai-interview-agent1.vercel.app
+🎯 **Start Interview:**
+https://ai-interview-agent-e6x4ff0hp-ai-interview-agent1.vercel.app/setup
 
 ⚡ **Backend API:**
 https://ai-interview-agent-rf0q.onrender.com/api/interview
@@ -20,105 +20,124 @@ https://ai-interview-agent-rf0q.onrender.com/api/interview
 📋 **Swagger API Docs:**
 https://ai-interview-agent-rf0q.onrender.com/docs
 
-🩺 **Health Check:**
+🩺 **Backend Health:**
 https://ai-interview-agent-rf0q.onrender.com/health
-
-💻 **GitHub:**
-https://github.com/khushigarg05/AI-Interview-Agent
 
 ---
 
 # 🎯 Problem
 
-Traditional technical interviews often follow a fixed sequence of questions, treating every candidate similarly.
+Traditional technical interviews often follow a fixed sequence of questions, regardless of a candidate's background or performance.
 
-This makes it difficult to identify:
+**InterviewIQ AI** takes a different approach.
 
-* What the candidate actually understands
-* Where their knowledge gaps are
-* Whether a weak answer needs deeper probing
-* Which topics should be assessed next
+It considers:
 
-**InterviewIQ AI makes the interview adaptive.**
+* Candidate profile and role
+* Learning journey and completed missions
+* Skipped or weak topics
+* Curriculum context
+* Previous answers
+* AI evaluation results
 
-Instead of:
+Instead of simply asking:
 
-```text
-Question → Answer → Next Question
-```
+> "Can you answer this question?"
 
-it follows:
+the system aims to determine:
 
-```text
-Question
-   ↓
-Candidate Answer
-   ↓
-AI Evaluation
-   ↓
-Identify Strength / Knowledge Gap
-   ↓
-Adaptive Follow-Up
-   ↓
-Next Relevant Question
-   ↓
-Final Assessment
-```
+> **What does this candidate understand, where are the gaps, and what should we ask next?**
 
 ---
 
-# 🧠 Solution
+# 🧠 How It Works
 
-InterviewIQ AI combines **candidate intelligence, curriculum knowledge, RAG, LLM reasoning, and response evaluation** to create personalized technical interviews.
+```text
+Candidate Profile
+       ↓
+Learning Journey
+       ↓
+Curriculum Analysis
+       ↓
+Relevant Topic Retrieval
+       ↓
+AI Question Generation
+       ↓
+Candidate Answer
+       ↓
+AI Evaluation
+       ↓
+Strength / Knowledge Gap
+       ↓
+Adaptive Follow-Up
+       ↓
+Next Question
+       ↓
+Final Assessment
+       ↓
+Actionable Feedback
+```
 
-The system considers:
-
-* Candidate profile and role
-* Learning history
-* Completed and skipped topics
-* Curriculum content
-* Previous answers
-* Previous evaluations
-* Current interview progress
-
-This allows the interviewer agent to dynamically decide **what to ask next and whether additional probing is required.**
+This creates an interview experience that adapts to the candidate rather than following a static questionnaire.
 
 ---
 
 # ✨ Key Features
 
-### 👤 Candidate-Aware Interviews
+### 🧠 Candidate-Aware Interviews
 
-Questions are personalized using candidate profiles, roles, learning history, and curriculum progress.
+Questions are personalized using candidate role, learning history, completed missions, skipped topics, and performance signals.
 
 ### 📚 Curriculum-Grounded Questions
 
-RAG retrieves relevant content from the 31-day AI Cohort curriculum before generating questions.
+The system uses a **31-Day AI Cohort Knowledge Base** covering topics such as:
+
+* Prompt Engineering
+* Embeddings
+* Vector Databases
+* RAG
+* Agentic AI
+* MCP
+* AI Evaluation
+* AI Security
+* Deployment
+* Production AI Systems
 
 ### 🎤 Multi-Turn Interviews
 
-Candidates answer questions across a continuous interview session.
+The candidate answers technical questions, receives AI evaluation, and continues through an adaptive interview flow.
 
 ### 🔄 Adaptive Follow-Ups
 
-Weak, incomplete, shallow, or uncertain answers can trigger targeted follow-up questions.
-
-### 🧠 Context-Aware Reasoning
-
-Previous questions, answers, evaluations, and topics influence subsequent interview decisions.
+Weak, incomplete, shallow, or partially correct answers can trigger targeted follow-up questions.
 
 ### 📊 AI Response Evaluation
 
-Answers are evaluated for:
+Responses are evaluated on:
 
 * Technical correctness
 * Depth
 * Relevance
 * Practical understanding
-* Clarity
+* Technical clarity
 * Production awareness
 
-### 📝 Final Candidate Assessment
+Scores use a **1–10 scale**.
+
+### 🛡️ Weak-Response Detection
+
+Responses such as:
+
+```text
+I don't know
+skip
+no idea
+not sure
+```
+
+are treated as insufficient rather than receiving an artificially high score.
+
+### 📈 Final Assessment
 
 The system generates:
 
@@ -129,134 +148,107 @@ The system generates:
 * Weakest topics
 * Performance summary
 
-### 🛡️ Weak-Response Handling
-
-Responses such as `skip`, `I don't know`, `not sure`, or meaningless input are handled separately rather than receiving artificially high scores.
-
 ---
 
-# 🏆 Problem Statement Coverage
+# 🏆 Requirement Coverage
 
-| Requirement                        | Implementation                 |
-| ---------------------------------- | ------------------------------ |
-| Conversational technical interview | ✅ Multi-turn interview         |
-| Minimum 8 questions                | ✅ Session question flow        |
-| At least 4 curriculum days         | ✅ Curriculum-aware selection   |
-| Adaptive follow-ups                | ✅ Follow-up generation         |
-| Previous response context          | ✅ Session state                |
-| Structured feedback                | ✅ Feedback endpoint            |
-| Candidate personalization          | ✅ Candidate + learning signals |
-| Curriculum grounding               | ✅ RAG retrieval                |
-| AI evaluation                      | ✅ LLM evaluation               |
-| Required API                       | ✅ `POST /api/interview`        |
+| Requirement                        | Implementation               |
+| ---------------------------------- | ---------------------------- |
+| Conversational technical interview | ✅ Multi-turn interview       |
+| Minimum 8 questions                | ✅ Interview session flow     |
+| At least 4 curriculum days         | ✅ Curriculum-aware selection |
+| Adaptive follow-ups                | ✅ Follow-up generation       |
+| Previous response context          | ✅ Session state + evaluation |
+| Structured final feedback          | ✅ Feedback endpoint          |
+| `POST /api/interview`              | ✅ Implemented                |
+| Candidate personalization          | ✅ Profile + learning signals |
+| Curriculum grounding               | ✅ RAG/context retrieval      |
+| AI evaluation                      | ✅ LLM evaluation layer       |
 
 ---
 
 # 🏗️ Architecture
 
 ```text
-Candidate Profile
-       │
-       ▼
-Learning / Mission History
-       │
-       ▼
-Curriculum Analysis
-       │
-       ▼
-RAG Retrieval
-       │
-       ▼
-Relevant Curriculum Context
-       │
-       ▼
-Groq / Llama
-       │
-       ▼
-Question Generation
-       │
-       ▼
-Candidate Answer
-       │
-       ▼
-AI Evaluation
-       │
-       ├───────────────┐
-       │               │
-       ▼               ▼
-Strong Answer     Knowledge Gap
-       │               │
-       │               ▼
-       │        Adaptive Follow-Up
-       │               │
-       └───────┬───────┘
-               ▼
-        Next Question
-               │
-               ▼
-        Final Assessment
-               │
-               ▼
-        Candidate Feedback
+                    Candidate Profile
+                           │
+                           ▼
+                  Curriculum Analysis
+                           │
+                           ▼
+                     RAG Retrieval
+                           │
+                           ▼
+                  Question Generator
+                    Groq / Llama
+                           │
+                           ▼
+              ┌─────────────────────────┐
+              │     Interview Loop      │
+              │                         │
+              │ Question → Answer       │
+              │      ↓                  │
+              │ Evaluation              │
+              │      ↓                  │
+              │ Follow-up / Next Topic  │
+              └────────────┬────────────┘
+                           │
+                           ▼
+                    Session State
+                           │
+                           ▼
+                   Final Feedback
 ```
 
 ---
 
-# 🔄 Interview Flow
+# 🔧 Backend Flow
 
 ```text
-Start Session
-     ↓
-Analyze Candidate
-     ↓
-Select Relevant Topic
-     ↓
-Retrieve Curriculum Context
-     ↓
-Generate Question
-     ↓
-Candidate Answers
-     ↓
-Evaluate Response
-     ↓
-Follow-Up Needed?
-   ↙           ↘
- Yes            No
-  ↓              ↓
-Probe         Next Topic
-  ↓              ↓
-  └──────→ Next Question
-                ↓
-        Final Assessment
+POST /api/interview
+        │
+        ▼
+BreethService
+        │
+        ├── Candidate Service
+        ├── Curriculum Service
+        ├── RAG Service
+        ├── LLM Service
+        └── Session Service
+                │
+                ▼
+        Interview Response
 ```
+
+The orchestration layer coordinates candidate context, curriculum retrieval, question generation, evaluation, follow-ups, session state, and final assessment.
 
 ---
 
 # 🛠️ Technology Stack
 
-### Frontend
+## Frontend
 
 * **Next.js**
 * **React**
 * **TypeScript**
 * **Tailwind CSS**
 
-### Backend
+## Backend
 
 * **Python**
 * **FastAPI**
 * **Pydantic**
 * **Uvicorn**
 
-### AI
+## AI / LLM
 
 * **Groq**
 * **Llama 3.3 70B**
 * **LangChain**
+* **Google Gemini** — optional fallback
 * **RAG**
-* **Google Gemini** fallback
 
-### Data & State
+## Data & State
 
 * JSON curriculum data
 * JSON candidate profiles
@@ -265,16 +257,13 @@ Probe         Next Topic
 
 ---
 
-# 📁 Project Structure
+# 📁 Repository Structure
 
 ```text
 AI-Interview-Agent/
 │
 ├── ai_engine/
 │   ├── agents/
-│   │   ├── planner_agent.py
-│   │   ├── interviewer_agent.py
-│   │   └── feedback_agent.py
 │   ├── prompts/
 │   ├── rag/
 │   └── graph.py
@@ -299,66 +288,137 @@ AI-Interview-Agent/
 
 ---
 
-# 🔌 API
+# 📡 API
 
 ### Start / Continue Interview
 
 `POST /api/interview`
 
-The endpoint handles interview session creation, candidate context, question generation, answer evaluation, and adaptive progression.
-
-Example:
-
-```json
-{
-  "sessionId": "sess-001",
-  "candidate": {
-    "member": {
-      "id": "CAND-001",
-      "name": "Sarah Johnson",
-      "jobRole": "Senior Data Engineer"
-    },
-    "missions": []
-  }
-}
-```
-
-### Submit Answer
-
-```json
-{
-  "sessionId": "sess-001",
-  "message": "Embeddings are numerical vector representations that capture semantic meaning."
-}
-```
+Handles interview initialization and candidate responses.
 
 ### Get Feedback
 
 `GET /feedback/{session_id}`
 
-Returns the final candidate assessment.
+Returns the candidate's final interview assessment.
 
-### Health
+### Health Check
 
 `GET /health`
 
+Checks backend availability.
+
+### Interactive API Documentation
+
+`/docs`
+
+Provides Swagger UI for testing the API.
+
 ---
 
-# 🧪 Example Adaptive Interaction
+# 🚀 Getting Started
 
-**Question**
+## Prerequisites
+
+* Python 3.11+
+* Node.js 18+
+* npm
+* Git
+
+## 1. Clone
+
+```bash
+git clone https://github.com/khushigarg05/AI-Interview-Agent.git
+cd AI-Interview-Agent
+```
+
+## 2. Configure Environment
+
+Create `.env` using `.env.example`.
+
+```env
+GROQ_API_KEY=your_groq_api_key_here
+BREETH_API_KEY=your_breeth_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
+
+HOST=0.0.0.0
+PORT=8000
+MODEL_NAME=llama-3.3-70b-versatile
+```
+
+**Never commit real API keys to GitHub.**
+
+## 3. Install Backend
+
+### Windows
+
+```powershell
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+python -m pip install -r backend/requirements.txt
+```
+
+### macOS / Linux
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+python -m pip install -r backend/requirements.txt
+```
+
+## 4. Start Backend
+
+From the repository root:
+
+```bash
+python -m uvicorn backend.main:app --reload
+```
+
+Backend:
+
+```text
+http://localhost:8000
+```
+
+Swagger:
+
+```text
+http://localhost:8000/docs
+```
+
+## 5. Start Frontend
+
+Open another terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:3000
+```
+
+---
+
+# 🧪 Example Adaptive Interview
+
+### Question
 
 ```text
 What are embeddings?
 ```
 
-**Candidate**
+### Candidate
 
 ```text
 I don't know much about embeddings.
 ```
 
-**Evaluation**
+### Evaluation
 
 ```json
 {
@@ -367,20 +427,18 @@ I don't know much about embeddings.
 }
 ```
 
-**Adaptive Follow-Up**
+### Adaptive Follow-Up
 
 ```text
-What is your understanding of word embeddings
-and how they are used in NLP?
+What is your understanding of the basic concept of
+word embeddings and how they are used in NLP?
 ```
 
-The system uses the candidate's response to determine how deeply to probe the topic.
+The interview then uses the candidate's response to determine the next step.
 
 ---
 
-# 📊 Evaluation
-
-Responses are scored on a **1–10 scale**.
+# 📊 Evaluation Scale
 
 | Score | Interpretation                    |
 | ----- | --------------------------------- |
@@ -399,75 +457,118 @@ needs_follow_up = true / false
 
 ---
 
-# 🚀 Local Setup
+# 🧠 Design Principles
 
-## Prerequisites
+### Candidate-Aware
 
-* Python 3.11+
-* Node.js 18+
-* npm
-* Git
+Questions reflect the candidate's role and learning history.
 
-### 1. Clone
+### Adaptive
 
-```bash
-git clone https://github.com/khushigarg05/AI-Interview-Agent.git
-cd AI-Interview-Agent
-```
+The next question depends on the previous response.
 
-### 2. Configure Environment
+### Grounded
 
-Create `.env` using `.env.example`.
+Questions are informed by curriculum context.
 
-```env
-GROQ_API_KEY=your_groq_api_key
-BREETH_API_KEY=your_breeth_api_key
-GEMINI_API_KEY=your_gemini_api_key
+### Structured
 
-HOST=0.0.0.0
-PORT=8000
-MODEL_NAME=llama-3.3-70b-versatile
-```
+LLM outputs are converted into structured API responses.
 
-**Never commit real API keys to GitHub.**
+### Fault Tolerant
 
-### 3. Backend
+Fallback behavior is available for important interview operations.
 
-```powershell
-python -m venv venv
-.\venv\Scripts\Activate.ps1
+### Interviewer-Like
 
-python -m pip install -r backend/requirements.txt
+The system focuses on realistic technical assessment rather than static quizzes.
 
-python -m uvicorn backend.main:app --reload
-```
+---
 
-Backend:
+# 🎯 Why InterviewIQ AI?
+
+Traditional approach:
 
 ```text
-http://localhost:8000
+Question → Answer → Next Question
 ```
 
-Swagger:
+InterviewIQ AI:
 
 ```text
-http://localhost:8000/docs
+Question
+   ↓
+Answer
+   ↓
+Understand Response
+   ↓
+Identify Strength / Gap
+   ↓
+Decide Whether to Probe
+   ↓
+Generate Follow-Up
+   ↓
+Continue Interview
 ```
 
-### 4. Frontend
+> **Don't give every candidate the same interview. Let the interview adapt to the candidate.**
 
-Open another terminal:
+---
 
-```powershell
-cd frontend
-npm install
-npm run dev
-```
+# 📈 Future Roadmap
 
-Frontend:
+* 🎙️ Real-time voice interviews
+* 🗣️ Speech-to-text and text-to-speech
+* 🧠 Long-term candidate memory
+* 📊 Advanced competency scoring
+* 📚 Personalized revision plans
+* 🔎 Semantic candidate search
+* 🧪 Automated evaluation benchmarks
+* ⚡ Redis-backed session state
+* 🗄️ Persistent database storage
+* 🔐 Authentication and RBAC
+* 📈 Recruiter analytics dashboard
+* ☁️ Expanded cloud deployment
+* 🔄 Advanced multi-agent orchestration
+
+---
+
+# 🔐 Security
+
+Before production-scale deployment, consider:
+
+* Secure API key management
+* Authentication and authorization
+* Rate limiting
+* Input validation
+* Prompt-injection defenses
+* Encrypted persistent storage
+* Secure CORS configuration
+* Audit logging
+* Candidate-data privacy controls
+
+**Never expose API keys in source code or GitHub.**
+
+---
+
+# 📖 Documentation
+
+Additional documentation:
 
 ```text
-http://localhost:3000
+documentation/
+```
+
+Prompt engineering notes:
+
+```text
+PROMPTS.md
+```
+
+Environment template:
+
+```text
+.env.example
 ```
 
 ---
@@ -483,7 +584,7 @@ Start Interview
       ↓
 Answer Technical Question
       ↓
-Observe Evaluation
+Observe AI Evaluation
       ↓
 Receive Adaptive Follow-Up
       ↓
@@ -494,59 +595,9 @@ Complete Interview
 Review Final Feedback
 ```
 
-👉 **Demo:**
-https://ai-interview-agent-f1iema3e7-ai-interview-agent1.vercel.app/setup
+## 🚀 Live Application
 
----
-
-# 🚀 Why InterviewIQ AI?
-
-Traditional systems ask every candidate similar questions.
-
-InterviewIQ AI instead asks:
-
-> **What does this candidate understand?**
-
-> **Where are their technical gaps?**
-
-> **How should the interviewer probe those gaps?**
-
-> **What should the candidate improve next?**
-
-The core principle:
-
-```text
-Don't give every candidate the same interview.
-Let the interview adapt to the candidate.
-```
-
----
-
-# 🔮 Future Roadmap
-
-* 🎙️ Real-time voice interviews
-* 🗣️ Speech-to-text / text-to-speech
-* 🧠 Long-term candidate memory
-* 📊 Advanced competency scoring
-* 📚 Personalized revision plans
-* 🔎 Semantic candidate search
-* 🧪 Automated evaluation benchmarks
-* 🗄️ Persistent database storage
-* 🔐 Authentication and RBAC
-* 📈 Recruiter analytics dashboard
-* ⚡ Scalable production infrastructure
-
----
-
-# 📖 Documentation
-
-Additional documentation:
-
-```text
-documentation/
-PROMPTS.md
-.env.example
-```
+**https://ai-interview-agent-e6x4ff0hp-ai-interview-agent1.vercel.app/**
 
 ---
 
@@ -554,14 +605,29 @@ PROMPTS.md
 
 ## InterviewIQ AI — Adaptive Technical Interview Agent
 
-**Built for VicoDathon — 48-Hour Hackathon**
+Built for **VicoDathon — A 48hrs Hackathon**
 
 ### Team DARK ALGORITHMS
 
-⭐ If you find the project interesting, consider starring the repository.
+---
+
+# 🔗 Project Links
+
+* 🌐 **Live Demo:** https://ai-interview-agent-e6x4ff0hp-ai-interview-agent1.vercel.app/
+* 🎯 **Start Interview:** https://ai-interview-agent-e6x4ff0hp-ai-interview-agent1.vercel.app/setup
+* 💻 **GitHub:** https://github.com/khushigarg05/AI-Interview-Agent
+* ⚡ **Backend:** https://ai-interview-agent-rf0q.onrender.com/api/interview
+* 📋 **Swagger:** https://ai-interview-agent-rf0q.onrender.com/docs
+* 🩺 **Health:** https://ai-interview-agent-rf0q.onrender.com/health
+
+---
+
+## ⭐ Support
+
+If you find the project interesting, consider giving the repository a ⭐.
 
 ---
 
 ## License
 
-Developed as part of VicoDathon for educational and demonstration purposes.
+Developed as part of **VicoDathon** for educational and demonstration purposes.
