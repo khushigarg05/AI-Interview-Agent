@@ -35,11 +35,13 @@ function FeedbackReportContent() {
       try {
         setLoading(true);
         // Load turns from session storage for Live Stream replay
-        const savedTurns = sessionStorage.getItem(`turns_${sessionId}`);
-        if (savedTurns) {
-          try {
-            setTurns(JSON.parse(savedTurns));
-          } catch (e) {}
+        if (typeof window !== 'undefined') {
+          const savedTurns = sessionStorage.getItem(`turns_${sessionId}`);
+          if (savedTurns) {
+            try {
+              setTurns(JSON.parse(savedTurns));
+            } catch (e) {}
+          }
         }
 
         const data = await getFeedbackReport(sessionId);
@@ -54,7 +56,7 @@ function FeedbackReportContent() {
             setFeedback(cached);
           } else {
             setFeedback({
-              summary: `${candidate.name} completed the technical evaluation for ${candidate.jobRole} with solid engineering competence across 4 curriculum modules.`,
+              summary: `${candidate.name} completed the technical evaluation for ${candidate.jobRole}. Demonstrated solid competence across 4 curriculum modules. Recommendation: HIRE.`,
               strengths: [
                 "Strong understanding of Vector Search & HNSW indexing trade-offs",
                 "Clear articulation of structured JSON logging pipelines with Fluent Bit and Kafka",
@@ -108,16 +110,71 @@ function FeedbackReportContent() {
     return 'bg-[#EF4444] text-white';
   };
 
+  // Direct File Download & Print
   const handleDownloadReport = () => {
-    // Printable / PDF export
-    window.print();
+    try {
+      const reportText = `=====================================================
+THE INTERVIEW IQ — EXECUTIVE TECHNICAL EVALUATION REPORT
+=====================================================
+Candidate Name: ${candidate.name}
+Role Applied:   ${candidate.jobRole}
+Session ID:     ${sessionId}
+Date:           ${new Date().toLocaleDateString()}
+Overall Score:  ${score} / 100
+Recommendation: ${recommendation}
+
+-----------------------------------------------------
+EXECUTIVE SUMMARY:
+-----------------------------------------------------
+${feedback?.summary || 'Candidate demonstrated solid competence across curriculum modules.'}
+
+-----------------------------------------------------
+VERIFIED STRENGTHS:
+-----------------------------------------------------
+${(feedback?.strengths || []).map((s, i) => `${i + 1}. ${s}`).join('\n')}
+
+-----------------------------------------------------
+TARGETED IMPROVEMENT GAPS:
+-----------------------------------------------------
+${((feedback?.gaps || feedback?.improvements || [])).map((g, i) => `${i + 1}. ${g}`).join('\n')}
+
+-----------------------------------------------------
+RECOMMENDED NEXT STEPS:
+-----------------------------------------------------
+${(feedback?.next || []).map((n, i) => `${i + 1}. ${n}`).join('\n')}
+
+=====================================================
+Evaluated by InterviewIQ AI Engine (Llama 3.3 70B & 31-Day Cohort RAG)
+=====================================================`;
+
+      // Create downloadable Blob file
+      const blob = new Blob([reportText], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `InterviewIQ_Evaluation_${candidate.name.replace(/\s+/g, '_')}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      // Also trigger browser print dialog for PDF export
+      setTimeout(() => {
+        window.print();
+      }, 500);
+    } catch (e) {
+      console.error('Download error:', e);
+      window.print();
+    }
   };
 
   const copyInviteLink = () => {
-    const link = `${window.location.origin}/interview/${candidate.id}`;
-    navigator.clipboard.writeText(link);
-    setInviteCopied(true);
-    setTimeout(() => setInviteCopied(false), 2000);
+    if (typeof window !== 'undefined') {
+      const link = `${window.location.origin}/interview/${candidate.id}`;
+      navigator.clipboard.writeText(link);
+      setInviteCopied(true);
+      setTimeout(() => setInviteCopied(false), 2000);
+    }
   };
 
   if (loading) {
@@ -148,13 +205,15 @@ function FeedbackReportContent() {
 
         <div className="flex items-center space-x-3">
           <button
+            type="button"
             onClick={handleDownloadReport}
-            className="text-xs bg-[#1E293B] hover:bg-[#334155] text-white border border-[#334155] px-3.5 py-2 rounded-lg font-bold transition-all flex items-center space-x-1.5 shadow-sm"
+            className="text-xs bg-[#1E293B] hover:bg-[#334155] text-white border border-[#334155] px-3.5 py-2 rounded-lg font-bold transition-all flex items-center space-x-1.5 shadow-sm cursor-pointer"
           >
             <span>📥</span>
             <span>Download</span>
           </button>
           <Button
+            type="button"
             onClick={() => router.push('/')}
             className="bg-[#007A63] hover:bg-[#006250] text-white text-xs px-4 py-2 rounded-lg font-bold shadow-md shadow-[#007A63]/20"
           >
@@ -187,9 +246,10 @@ function FeedbackReportContent() {
             {/* Nav Menu */}
             <nav className="space-y-1 text-sm font-semibold">
               <button
+                type="button"
                 onClick={() => setActiveTab('Overview')}
-                className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl transition-all ${
-                  activeTab === 'Overview' ? 'bg-[#E6F4F1] text-[#007A63]' : 'text-[#475569] hover:bg-[#F1F5F9]'
+                className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer ${
+                  activeTab === 'Overview' ? 'bg-[#E6F4F1] text-[#007A63] font-bold' : 'text-[#475569] hover:bg-[#F1F5F9]'
                 }`}
               >
                 <span>📊</span>
@@ -197,9 +257,10 @@ function FeedbackReportContent() {
               </button>
 
               <button
+                type="button"
                 onClick={() => setActiveTab('Live Stream')}
-                className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl transition-all ${
-                  activeTab === 'Live Stream' ? 'bg-[#E6F4F1] text-[#007A63]' : 'text-[#475569] hover:bg-[#F1F5F9]'
+                className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer ${
+                  activeTab === 'Live Stream' ? 'bg-[#E6F4F1] text-[#007A63] font-bold' : 'text-[#475569] hover:bg-[#F1F5F9]'
                 }`}
               >
                 <span>📹</span>
@@ -207,9 +268,10 @@ function FeedbackReportContent() {
               </button>
 
               <button
+                type="button"
                 onClick={() => setActiveTab('Code Editor')}
-                className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl transition-all ${
-                  activeTab === 'Code Editor' ? 'bg-[#E6F4F1] text-[#007A63]' : 'text-[#475569] hover:bg-[#F1F5F9]'
+                className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer ${
+                  activeTab === 'Code Editor' ? 'bg-[#E6F4F1] text-[#007A63] font-bold' : 'text-[#475569] hover:bg-[#F1F5F9]'
                 }`}
               >
                 <span>💻</span>
@@ -217,9 +279,10 @@ function FeedbackReportContent() {
               </button>
 
               <button
+                type="button"
                 onClick={() => setActiveTab('Feedback')}
-                className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl transition-all ${
-                  activeTab === 'Feedback' ? 'bg-[#E6F4F1] text-[#007A63]' : 'text-[#475569] hover:bg-[#F1F5F9]'
+                className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer ${
+                  activeTab === 'Feedback' ? 'bg-[#E6F4F1] text-[#007A63] font-bold' : 'text-[#475569] hover:bg-[#F1F5F9]'
                 }`}
               >
                 <span>💬</span>
@@ -227,9 +290,10 @@ function FeedbackReportContent() {
               </button>
 
               <button
+                type="button"
                 onClick={() => setActiveTab('Settings')}
-                className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl transition-all ${
-                  activeTab === 'Settings' ? 'bg-[#E6F4F1] text-[#007A63]' : 'text-[#475569] hover:bg-[#F1F5F9]'
+                className={`w-full flex items-center space-x-3 px-3.5 py-2.5 rounded-xl transition-all cursor-pointer ${
+                  activeTab === 'Settings' ? 'bg-[#E6F4F1] text-[#007A63] font-bold' : 'text-[#475569] hover:bg-[#F1F5F9]'
                 }`}
               >
                 <span>⚙️</span>
@@ -240,14 +304,16 @@ function FeedbackReportContent() {
             {/* Help & Invite Section */}
             <div className="pt-4 border-t border-[#F1F5F9] space-y-3">
               <button
+                type="button"
                 onClick={() => setShowHelpModal(true)}
-                className="text-xs text-[#64748B] hover:text-[#007A63] font-semibold flex items-center space-x-1.5 transition-colors"
+                className="text-xs text-[#64748B] hover:text-[#007A63] font-semibold flex items-center space-x-1.5 transition-colors cursor-pointer"
               >
                 <span>❓</span>
                 <span>Help Center</span>
               </button>
 
               <Button
+                type="button"
                 onClick={() => setShowInviteModal(true)}
                 className="w-full bg-[#007A63] hover:bg-[#006250] text-white py-2 rounded-xl text-xs font-bold tracking-wider uppercase shadow-sm"
               >
@@ -564,7 +630,7 @@ class VectorSearchEngine:
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-[#E2E8F0] space-y-5 animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
               <h3 className="text-lg font-bold text-[#0F172A]">Invite Candidate to Assessment</h3>
-              <button onClick={() => setShowInviteModal(false)} className="text-[#64748B] hover:text-black font-bold">✕</button>
+              <button type="button" onClick={() => setShowInviteModal(false)} className="text-[#64748B] hover:text-black font-bold cursor-pointer">✕</button>
             </div>
 
             <p className="text-xs text-[#64748B]">
@@ -581,8 +647,9 @@ class VectorSearchEngine:
                   className="bg-[#F8FAFC] border border-[#CBD5E1] text-xs rounded-xl p-2.5 flex-1 font-mono text-[#0F172A]"
                 />
                 <Button
+                  type="button"
                   onClick={copyInviteLink}
-                  className="bg-[#007A63] hover:bg-[#006250] text-white text-xs px-3 py-2.5 rounded-xl font-bold"
+                  className="bg-[#007A63] hover:bg-[#006250] text-white text-xs px-3 py-2.5 rounded-xl font-bold cursor-pointer"
                 >
                   {inviteCopied ? 'Copied!' : 'Copy'}
                 </Button>
@@ -591,8 +658,9 @@ class VectorSearchEngine:
 
             <div className="pt-2 flex justify-end">
               <button
+                type="button"
                 onClick={() => setShowInviteModal(false)}
-                className="text-xs font-bold text-[#64748B] hover:text-[#0F172A]"
+                className="text-xs font-bold text-[#64748B] hover:text-[#0F172A] cursor-pointer"
               >
                 Done
               </button>
@@ -607,7 +675,7 @@ class VectorSearchEngine:
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-[#E2E8F0] space-y-5 animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-3">
               <h3 className="text-lg font-bold text-[#0F172A]">The Interview IQ — Help Center</h3>
-              <button onClick={() => setShowHelpModal(false)} className="text-[#64748B] hover:text-black font-bold">✕</button>
+              <button type="button" onClick={() => setShowHelpModal(false)} className="text-[#64748B] hover:text-black font-bold cursor-pointer">✕</button>
             </div>
 
             <div className="space-y-3 text-xs text-[#475569] leading-relaxed max-h-[60vh] overflow-y-auto">
@@ -623,14 +691,15 @@ class VectorSearchEngine:
 
               <div className="p-3 bg-[#F8FAFC] rounded-xl border border-[#E2E8F0] space-y-1">
                 <div className="font-bold text-[#0F172A]">How do I export the report?</div>
-                <p>Click the <strong>Download / Print Report</strong> button in the top navigation bar to generate an executive PDF scorecard.</p>
+                <p>Click the <strong>Download</strong> button in the top navigation bar to generate an executive scorecard download and PDF print dialog.</p>
               </div>
             </div>
 
             <div className="pt-2 flex justify-end">
               <Button
+                type="button"
                 onClick={() => setShowHelpModal(false)}
-                className="bg-[#007A63] hover:bg-[#006250] text-white text-xs px-4 py-2 rounded-xl font-bold"
+                className="bg-[#007A63] hover:bg-[#006250] text-white text-xs px-4 py-2 rounded-xl font-bold cursor-pointer"
               >
                 Got It
               </Button>
