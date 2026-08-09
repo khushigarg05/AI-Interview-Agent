@@ -4,10 +4,8 @@ import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
-import { ProgressBar } from '@/components/ui/ProgressBar';
 import { PageTransition } from '@/components/ui/PageTransition';
-import { all20Candidates, mockCandidates } from '@/lib/mockData';
+import { all20Candidates } from '@/lib/mockData';
 import { startInterview, sendAnswer, skipQuestion } from '@/lib/api';
 import { CandidateProfile } from '@/lib/types';
 
@@ -18,7 +16,6 @@ function InterviewSessionContent() {
   const candidateId = (params?.id as string) || 'sarah-johnson';
 
   const candidate: CandidateProfile = all20Candidates.find(c => c.id === candidateId) || all20Candidates[0];
-
   const sessionId = searchParams?.get('sessionId') || `sess-${candidateId}-${Date.now()}`;
 
   const [inputMessage, setInputMessage] = useState('');
@@ -61,7 +58,6 @@ function InterviewSessionContent() {
   useEffect(() => {
     if (!sessionId) return;
 
-    // Check if we have saved turns in sessionStorage
     const saved = sessionStorage.getItem(`turns_${sessionId}`);
     const savedQuestion = sessionStorage.getItem(`question_${sessionId}`);
     const savedProgress = sessionStorage.getItem(`progress_${sessionId}`);
@@ -78,7 +74,6 @@ function InterviewSessionContent() {
       if (savedTopic) setCurrentTopic(savedTopic);
       setIsLoading(false);
     } else {
-      // Initialize interview session from API
       setIsLoading(true);
       startInterview(sessionId, candidate.backendPayload)
         .then(res => {
@@ -108,19 +103,30 @@ function InterviewSessionContent() {
         })
         .catch(err => {
           console.error('Failed to start interview:', err);
+          const fallback = [
+            {
+              id: '1',
+              sender: 'interviewer' as const,
+              senderName: 'AI Interviewer',
+              text: `Welcome ${candidate.name}! Let's begin your technical interview for the ${candidate.jobRole} position.\n\nQuestion 1 (${candidate.currentTopic}):\nWhat approach would you take to implement vector embeddings and cosine similarity indexing for semantic search?`
+            }
+          ];
+          setTurns(fallback);
+          sessionStorage.setItem(`turns_${sessionId}`, JSON.stringify(fallback));
         })
         .finally(() => {
           setIsLoading(false);
         });
     }
-  }, [sessionId, candidateId]);
+  }, [sessionId, candidate]);
 
-  // Voice speech-to-text recognition
+  // Voice speech input using Web Speech API
   const toggleVoiceInput = () => {
     if (typeof window === 'undefined') return;
+
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("Voice input is not supported in this browser. Please use Google Chrome.");
+      alert("Speech recognition is not supported in this browser. Please use Google Chrome.");
       return;
     }
 
@@ -131,22 +137,32 @@ function InterviewSessionContent() {
 
     try {
       const recognition = new SpeechRecognition();
-      recognition.lang = 'en-US';
       recognition.continuous = false;
       recognition.interimResults = false;
+      recognition.lang = 'en-US';
 
-      recognition.onstart = () => setIsListening(true);
-      recognition.onend = () => setIsListening(false);
-      recognition.onerror = () => setIsListening(false);
+      recognition.onstart = () => {
+        setIsListening(true);
+      };
 
       recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setInputMessage(prev => prev ? `${prev} ${transcript}` : transcript);
+        setIsListening(false);
+      };
+
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
       };
 
       recognition.start();
     } catch (e) {
-      console.error('Speech recognition error:', e);
+      console.error('Speech start error:', e);
       setIsListening(false);
     }
   };
@@ -154,7 +170,7 @@ function InterviewSessionContent() {
   const handleSubmitTurn = async () => {
     if (!inputMessage.trim() || isSubmitting) return;
 
-    const userMessage = inputMessage.trim();
+    const messageText = inputMessage.trim();
     setInputMessage('');
     setIsSubmitting(true);
 
@@ -162,7 +178,7 @@ function InterviewSessionContent() {
       id: `user-${Date.now()}`,
       sender: 'candidate' as const,
       senderName: `You (${candidate.name})`,
-      text: userMessage
+      text: messageText
     };
 
     const updatedTurns = [...turns, userTurn];
@@ -170,20 +186,19 @@ function InterviewSessionContent() {
     sessionStorage.setItem(`turns_${sessionId}`, JSON.stringify(updatedTurns));
 
     try {
-      const response = await sendAnswer(sessionId, userMessage);
+      const response = await sendAnswer(sessionId, messageText);
       
-      const systemTurn = {
-        id: `system-${Date.now()}`,
+      const aiTurn = {
+        id: `ai-${Date.now()}`,
         sender: 'interviewer' as const,
         senderName: 'AI Interviewer',
         text: response.reply
       };
-      
-      const finalTurns = [...updatedTurns, systemTurn];
+
+      const finalTurns = [...updatedTurns, aiTurn];
       setTurns(finalTurns);
       sessionStorage.setItem(`turns_${sessionId}`, JSON.stringify(finalTurns));
 
-      // Update backend-driven progress states
       if (response.questionNumber !== undefined) {
         setCurrentQuestion(response.questionNumber);
         sessionStorage.setItem(`question_${sessionId}`, String(response.questionNumber));
@@ -268,27 +283,27 @@ function InterviewSessionContent() {
   return (
     <PageTransition className="min-h-screen flex flex-col bg-[#F8FAFC]">
       {/* Top Navbar Header */}
-      <header className="bg-[#151E28] text-white px-6 py-3 flex items-center justify-between shadow-md border-b border-[#1E293B]">
-        <div className="flex items-center space-x-6">
-          <Link href="/" className="text-lg font-bold tracking-tight text-white hover:opacity-90 flex items-center space-x-2">
-            <span className="w-7 h-7 rounded bg-[#007A63] flex items-center justify-center font-bold text-xs">IQ</span>
+      <header className="bg-[#111827] text-white px-6 py-3.5 flex items-center justify-between shadow-md border-b border-slate-800">
+        <div className="flex items-center space-x-4">
+          <Link href="/" className="text-lg font-bold tracking-tight text-white hover:opacity-90 flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#007A63] to-teal-400 flex items-center justify-center font-black text-xs shadow-sm">
+              IQ
+            </div>
             <span>The Interview IQ</span>
           </Link>
-          <span className="hidden md:inline-block bg-[#1E293B] text-[#10B981] text-xs font-semibold px-2.5 py-0.5 rounded-full border border-[#334155]">
-            Live Cloud Assessment
+          <span className="hidden md:inline-flex items-center space-x-1.5 bg-slate-800 text-emerald-400 text-xs font-semibold px-2.5 py-1 rounded-full border border-slate-700">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>Groq Llama 3.3 70B Active</span>
           </span>
         </div>
 
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2 bg-[#1E293B] px-3 py-1 rounded-full text-xs text-[#CBD5E1] border border-[#334155]">
-            <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse"></span>
-            <span>Active Session</span>
-          </div>
+        <div className="flex items-center space-x-3">
           <button
+            type="button"
             onClick={handleEndSession}
-            className="text-xs bg-[#EF4444]/10 hover:bg-[#EF4444] text-[#EF4444] hover:text-white border border-[#EF4444]/30 px-3 py-1.5 rounded-lg font-bold transition-colors"
+            className="text-xs bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white border border-rose-500/30 px-3.5 py-1.5 rounded-lg font-bold transition-all cursor-pointer"
           >
-            End Session
+            End Assessment
           </button>
         </div>
       </header>
@@ -299,25 +314,25 @@ function InterviewSessionContent() {
         {/* Left Sidebar */}
         <div className="lg:col-span-4 space-y-5">
           {/* Candidate Profile Card */}
-          <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5 shadow-sm space-y-4">
+          <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
             <div className="flex items-center space-x-3">
               <div className="w-12 h-12 rounded-full bg-[#E6F4F1] border-2 border-[#007A63] flex items-center justify-center font-black text-[#007A63] text-lg">
                 {candidate.name.split(' ').map(n => n[0]).join('')}
               </div>
               <div>
-                <h3 className="font-bold text-[#0F172A] text-base">{candidate.name}</h3>
-                <p className="text-xs text-[#64748B]">{candidate.jobRole}</p>
-                <p className="text-xs text-[#007A63] font-semibold">{candidate.education || 'CS Graduate'}</p>
+                <h3 className="font-bold text-slate-900 text-base">{candidate.name}</h3>
+                <p className="text-xs text-slate-500 font-medium">{candidate.jobRole} · {candidate.yearsExperience || 5} yrs exp</p>
+                <p className="text-xs text-[#007A63] font-semibold">{candidate.education || 'CS Degree'}</p>
               </div>
             </div>
 
             {/* Progress Section */}
-            <div className="space-y-2 pt-3 border-t border-[#F1F5F9]">
+            <div className="space-y-2 pt-3 border-t border-slate-100">
               <div className="flex justify-between text-xs">
-                <span className="font-semibold text-[#64748B]">Interview Progress:</span>
+                <span className="font-semibold text-slate-500">Interview Progress:</span>
                 <span className="font-bold text-[#007A63]">{progress} Questions</span>
               </div>
-              <div className="w-full bg-[#E2E8F0] h-2.5 rounded-full overflow-hidden">
+              <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
                 <div 
                   className="bg-[#007A63] h-full rounded-full transition-all duration-500" 
                   style={{ width: `${parseProgressPercent(progress)}%` }}
@@ -327,20 +342,20 @@ function InterviewSessionContent() {
           </div>
 
           {/* Active Topic Focus Card */}
-          <div className="bg-gradient-to-br from-[#151E28] to-[#1E293B] rounded-2xl p-5 text-white border border-[#334155] shadow-sm space-y-3">
+          <div className="bg-gradient-to-br from-[#111827] to-slate-900 rounded-2xl p-5 text-white border border-slate-800 shadow-md space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase text-[#10B981] tracking-wider">Current Topic Focus</span>
-              <span className="text-xs bg-[#334155] text-white px-2 py-0.5 rounded font-mono">Q{currentQuestion} of 8</span>
+              <span className="text-xs font-bold uppercase text-teal-400 tracking-wider">Active Curriculum Focus</span>
+              <span className="text-xs bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono border border-slate-700">Q{currentQuestion} of 8</span>
             </div>
             <h4 className="text-base font-bold text-white leading-snug">{currentTopic}</h4>
-            <p className="text-xs text-[#94A3B8] leading-relaxed">
-              Questions are grounded in the 31-Day AI Cohort curriculum with real-time adaptive difficulty scaling.
+            <p className="text-xs text-slate-400 leading-relaxed">
+              31-Day AI Cohort grounding with real-time adaptive follow-up evaluation.
             </p>
           </div>
         </div>
 
         {/* Right Chat Stream */}
-        <div className="lg:col-span-8 bg-white rounded-2xl border border-[#E2E8F0] shadow-sm flex flex-col h-[70vh] sm:h-[75vh] overflow-hidden">
+        <div className="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col h-[70vh] sm:h-[75vh] overflow-hidden">
           
           {/* Chat Messages List */}
           <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4">
@@ -348,7 +363,7 @@ function InterviewSessionContent() {
               <div className="flex items-center justify-center h-full text-center space-y-2">
                 <div className="space-y-3">
                   <div className="w-10 h-10 border-4 border-[#007A63] border-t-transparent rounded-full animate-spin mx-auto"></div>
-                  <p className="text-sm font-semibold text-[#64748B]">Connecting to AI Interviewer...</p>
+                  <p className="text-sm font-semibold text-slate-500">Connecting to Autonomous AI Interviewer...</p>
                 </div>
               </div>
             ) : (
@@ -361,7 +376,7 @@ function InterviewSessionContent() {
                   >
                     <div className={`max-w-[85%] rounded-2xl p-4 sm:p-5 shadow-sm space-y-1.5 ${
                       isInterviewer 
-                        ? 'bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A]' 
+                        ? 'bg-slate-50 border border-slate-200 text-slate-900' 
                         : 'bg-[#007A63] text-white font-medium'
                     }`}>
                       <div className="flex items-center justify-between text-xs opacity-75 font-semibold">
@@ -379,7 +394,7 @@ function InterviewSessionContent() {
           </div>
 
           {/* Chat Input Bar */}
-          <div className="p-4 border-t border-[#E2E8F0] bg-[#F8FAFC] space-y-3">
+          <div className="p-4 border-t border-slate-200 bg-slate-50 space-y-3">
             <div className="relative">
               <textarea
                 value={inputMessage}
@@ -393,34 +408,38 @@ function InterviewSessionContent() {
                 disabled={isSubmitting || isLoading}
                 placeholder="Type your technical explanation here (or click the mic icon to speak)..."
                 rows={3}
-                className="w-full bg-white border border-[#CBD5E1] focus:border-[#007A63] focus:ring-2 focus:ring-[#007A63]/20 rounded-xl p-3 text-sm text-[#0F172A] placeholder-[#94A3B8] resize-none outline-none transition-all"
+                className="w-full bg-white border border-slate-300 focus:border-[#007A63] focus:ring-2 focus:ring-[#007A63]/20 rounded-xl p-3 text-sm text-slate-900 placeholder-slate-400 resize-none outline-none transition-all shadow-inner"
               />
               <button
                 type="button"
                 onClick={toggleVoiceInput}
-                className={`absolute right-3 bottom-3 p-2 rounded-lg text-xs font-semibold flex items-center space-x-1 transition-all ${
-                  isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-[#E2E8F0] hover:bg-[#CBD5E1] text-[#475569]'
+                className={`absolute right-3 bottom-3 p-2 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all cursor-pointer ${
+                  isListening ? 'bg-rose-500 text-white animate-pulse' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
                 }`}
                 title="Voice Speech Input"
               >
-                <span>🎙️</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
                 <span>{isListening ? 'Listening...' : 'Voice'}</span>
               </button>
             </div>
 
             <div className="flex items-center justify-between gap-3">
               <button
+                type="button"
                 onClick={handleSkip}
                 disabled={isSubmitting || isLoading}
-                className="text-xs text-[#64748B] hover:text-[#EF4444] font-bold px-3 py-2 rounded-lg transition-colors"
+                className="text-xs text-slate-500 hover:text-rose-500 font-bold px-3 py-2 rounded-lg transition-colors cursor-pointer"
               >
                 Skip Question ⏭
               </button>
 
               <Button
+                type="button"
                 onClick={handleSubmitTurn}
                 disabled={isSubmitting || isLoading || !inputMessage.trim()}
-                className="bg-[#007A63] hover:bg-[#006250] text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-md shadow-[#007A63]/20 flex items-center space-x-2"
+                className="bg-[#007A63] hover:bg-[#006250] text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-md shadow-[#007A63]/20 flex items-center space-x-2 cursor-pointer"
               >
                 <span>{isSubmitting ? 'Evaluating...' : 'Submit Answer'}</span>
                 {!isSubmitting && <span>▶</span>}

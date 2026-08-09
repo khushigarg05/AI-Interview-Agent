@@ -5,69 +5,64 @@ import Link from 'next/link';
 
 export const Navbar: React.FC = () => {
   return (
-    <header className="w-full border-b border-white/10 bg-[#302C2A]">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <header className="w-full border-b border-slate-800 bg-[#111827] sticky top-0 z-40 backdrop-blur-md">
+      <div className="max-w-7xl mx-auto px-6 py-3.5 flex items-center justify-between">
 
         {/* Left: Brand Logo & Title */}
-        <Link href="/" className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded bg-[#AB978C] flex items-center justify-center text-[#302C2A] font-bold">
-            AI
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#007A63] to-teal-400 flex items-center justify-center text-white font-black text-sm shadow-md group-hover:scale-105 transition-transform">
+            IQ
           </div>
 
-          <span className="text-white font-semibold">
-            AI Interview Agent
-          </span>
+          <div className="flex flex-col">
+            <span className="text-white font-bold text-base tracking-tight leading-tight">
+              The Interview IQ
+            </span>
+            <span className="text-[10px] text-teal-400 font-semibold tracking-wider uppercase">
+              Autonomous AI Interviewer
+            </span>
+          </div>
         </Link>
 
         {/* Center: Navigation Links */}
-        <nav className="hidden md:flex items-center space-x-8 text-sm font-medium">
+        <nav className="hidden md:flex items-center space-x-6 text-xs font-semibold">
           <Link
             href="/"
-            className="text-white hover:text-[#AB978C] transition-colors"
+            className="text-slate-300 hover:text-white transition-colors"
           >
-            Overview
+            Candidate Hub
           </Link>
 
           <Link
-            href="/setup"
-            className="text-white/80 hover:text-[#AB978C] transition-colors"
+            href="/feedback/sarah-johnson"
+            className="text-slate-400 hover:text-white transition-colors"
           >
-            Interview Setup
+            Sample Scorecard
           </Link>
 
-          <Link
-            href="/setup"
-            className="text-white/80 hover:text-[#AB978C] transition-colors"
+          <a
+            href="https://ai-interview-agent-rf0q.onrender.com/docs"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-slate-400 hover:text-white transition-colors"
           >
-            Live Interview
-          </Link>
-
-          <Link
-            href="/setup"
-            className="text-white/80 hover:text-[#AB978C] transition-colors"
-          >
-            Feedback
-          </Link>
+            Backend API Docs ↗
+          </a>
         </nav>
 
-        {/* Right: Candidate Profile */}
-        <div className="flex items-center space-x-4">
-          <Link
-            href="/setup"
-            className="hidden sm:inline-flex items-center px-4 py-1.5 rounded text-xs font-semibold bg-[#6B7C98] text-white hover:bg-[#576882] transition-colors"
-          >
-            Start Interview
-          </Link>
-
-          <div className="flex items-center space-x-2 pl-3 border-l border-white/20">
-            <div className="w-7 h-7 rounded-full bg-[#AB978C] flex items-center justify-center text-[#302C2A] text-xs font-bold">
-              K
-            </div>
-
-            <span className="text-xs font-medium text-white/90">
-              Khushi
-            </span>
+        {/* Right: Live Cloud Badge */}
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 bg-slate-800/80 border border-slate-700 px-3 py-1.5 rounded-full">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span className="text-[11px] font-bold text-slate-300">Llama 3.3 70B Online</span>
           </div>
+
+          <Link
+            href="/"
+            className="hidden sm:inline-flex items-center px-3.5 py-1.5 rounded-lg text-xs font-bold bg-[#007A63] hover:bg-[#006250] text-white transition-all shadow-sm"
+          >
+            Start Assessment
+          </Link>
         </div>
 
       </div>

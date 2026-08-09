@@ -4,51 +4,35 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
-import { Badge } from '@/components/ui/Badge';
 import { PageTransition } from '@/components/ui/PageTransition';
-import { mockCandidates, all20Candidates } from '@/lib/mockData';
+import { all20Candidates, mockCandidates } from '@/lib/mockData';
 import { startInterview } from '@/lib/api';
 import { CandidateProfile } from '@/lib/types';
-
-type Candidate = {
-  id: string;
-  name: string;
-  role: string;
-  progress: string;
-  skippedTopics: string[];
-  backendPayload: any;
-};
 
 export default function LandingPage() {
   const router = useRouter();
 
   const [navigatingId, setNavigatingId] = useState<string | null>(null);
   const [showAllModal, setShowAllModal] = useState<boolean>(false);
-  const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile>(mockCandidates[0]);
-  const [showAddCandidate, setShowAddCandidate] = useState(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
-const [addedCandidates, setAddedCandidates] = useState<Candidate[]>([]);
-
-const [newCandidate, setNewCandidate] = useState({
-  name: '',
-  role: '',
-  progress: '0',
-  skippedTopics: '',
-});
+  const filteredCandidates = all20Candidates.filter(c => 
+    c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.jobRole.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.currentTopic.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    c.backendPayload.member.id.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleStartInterview = async (candidate: CandidateProfile) => {
     setNavigatingId(candidate.id);
     try {
-      // Generate a unique sessionId
       const sessionId = `sess-${candidate.id}-${Date.now()}`;
 
-      // Call backend
       const response = await startInterview(
         sessionId,
         candidate.backendPayload
       );
 
-      // Save first AI response
       const initialTurns = [
         {
           id: '1',
@@ -64,7 +48,6 @@ const [newCandidate, setNewCandidate] = useState({
       if (response.progress) sessionStorage.setItem(`progress_${sessionId}`, response.progress);
       if (response.questionNumber) sessionStorage.setItem(`question_${sessionId}`, String(response.questionNumber));
 
-      // Navigate to the interview page
       router.push(`/interview/${candidate.id}?sessionId=${sessionId}`);
     } catch (error) {
       console.error('Failed to start interview:', error);
@@ -75,293 +58,227 @@ const [newCandidate, setNewCandidate] = useState({
     }
   };
 
-  // Handle Add Candidate
-  const handleAddCandidate = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const name = newCandidate.name.trim();
-    const role = newCandidate.role.trim();
-    const progress = newCandidate.progress.trim();
-    const skippedTopics = newCandidate.skippedTopics
-      .split(',')
-      .map((topic: string) => topic.trim())
-      .filter(Boolean);
-
-    if (!name || !role) {
-      alert('Please enter candidate name and job role.');
-      return;
-    }
-
-    // Create safe ID
-    const candidateId =
-      name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '') +
-      `-${Date.now()}`;
-
-    /*
-     * Backend payload.
-     *
-     * This follows the same general structure used by the
-     * existing interview API.
-     */
-    const backendPayload = {
-      candidate: {
-        member: {
-          id: candidateId,
-          name: name,
-          jobRole: role,
-        },
-        missions: [],
-      },
-    };
-
-    const candidate: Candidate = {
-      id: candidateId,
-      name,
-      role,
-      progress: `${progress}%`,
-      skippedTopics,
-      backendPayload,
-    };
-
-    setAddedCandidates((previous) => [
-      ...previous,
-      candidate,
-    ]);
-
-    // Reset form
-    setNewCandidate({
-      name: '',
-      role: '',
-      progress: '0',
-      skippedTopics: '',
-    });
-
-    // Close modal
-    setShowAddCandidate(false);
-  };
-
   return (
     <PageTransition className="min-h-screen flex flex-col bg-[#F8FAFC]">
-      {/* Top Navbar Header */}
-      <header className="bg-[#151E28] text-white px-6 sm:px-12 py-4 flex items-center justify-between shadow-md border-b border-[#1E293B]">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#007A63] to-[#10B981] flex items-center justify-center font-black text-white text-lg shadow-sm">
-            IQ
-          </div>
-          <span className="text-xl sm:text-2xl font-bold tracking-tight text-white">The Interview IQ</span>
-          <span className="hidden sm:inline-block bg-[#1E293B] text-[#10B981] text-xs font-semibold px-2.5 py-0.5 rounded-full border border-[#334155]">
-            Live Cloud AI
-          </span>
-        </div>
+      {/* Hero Header Area */}
+      <div className="bg-white border-b border-slate-200">
+        <div className="max-w-7xl mx-auto px-6 sm:px-12 py-10 sm:py-14 space-y-8">
+          
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            {/* Left Hero Text */}
+            <div className="lg:col-span-8 space-y-5">
+              <div className="inline-flex items-center space-x-2 bg-[#E6F4F1] border border-[#007A63]/20 px-3.5 py-1.5 rounded-full text-xs font-bold text-[#007A63]">
+                <span className="w-2 h-2 rounded-full bg-[#007A63] animate-pulse"></span>
+                <span>31-Day AI Cohort Grounded · Groq Llama 3.3 70B</span>
+              </div>
 
-        <div className="flex items-center space-x-6 text-sm font-medium text-[#CBD5E1]">
-          <Link href="/docs" target="_blank" className="hover:text-white transition-colors">API Docs</Link>
-          <button 
-            onClick={() => setShowAllModal(true)} 
-            className="hover:text-[#10B981] transition-colors font-semibold"
+              <h1 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+                The Most Advanced AI Technical Interview Agent
+              </h1>
+
+              <p className="text-sm sm:text-base text-slate-600 leading-relaxed max-w-2xl">
+                Conduct autonomous, curriculum-grounded technical interviews tailored to real engineering missions, skipped syllabus days, and candidate performance signals. Powered by real-time RAG and adaptive follow-up reasoning.
+              </p>
+
+              <div className="pt-2 flex flex-wrap items-center gap-3">
+                <Button
+                  type="button"
+                  onClick={() => handleStartInterview(all20Candidates[0])}
+                  disabled={navigatingId !== null}
+                  className="bg-[#007A63] hover:bg-[#006250] text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg shadow-[#007A63]/25 flex items-center space-x-2 cursor-pointer"
+                >
+                  <span>{navigatingId === all20Candidates[0].id ? 'INITIALIZING...' : 'START FEATURED INTERVIEW (SARAH JOHNSON)'}</span>
+                  <span>▶</span>
+                </Button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowAllModal(true)}
+                  className="bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 px-5 py-3 rounded-xl font-bold transition-all shadow-sm flex items-center space-x-2 text-xs sm:text-sm cursor-pointer"
+                >
+                  <span>Browse All 20 Candidates</span>
+                  <span>▾</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Right Status Card */}
+            <div className="lg:col-span-4 bg-[#111827] rounded-2xl p-6 text-white border border-slate-800 shadow-xl space-y-4">
+              <div className="text-xs font-bold uppercase tracking-wider text-teal-400">
+                Cloud Engine Status
+              </div>
+              <div className="space-y-3 text-xs">
+                <div className="flex justify-between py-1.5 border-b border-slate-800">
+                  <span className="text-slate-400">LLM Engine</span>
+                  <span className="font-bold text-white">Llama-3.3-70B-Versatile</span>
+                </div>
+                <div className="flex justify-between py-1.5 border-b border-slate-800">
+                  <span className="text-slate-400">Knowledge Base</span>
+                  <span className="font-bold text-white">31-Day AI Cohort</span>
+                </div>
+                <div className="flex justify-between py-1.5 border-b border-slate-800">
+                  <span className="text-slate-400">Candidate Dataset</span>
+                  <span className="font-bold text-teal-400">20 Real Profiles</span>
+                </div>
+                <div className="flex justify-between py-1.5">
+                  <span className="text-slate-400">Evaluation Standard</span>
+                  <span className="font-bold text-emerald-400">1-10 Rubric + Report</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* Featured Candidates Section */}
+      <div className="max-w-7xl mx-auto px-6 sm:px-12 py-10 flex-1 w-full space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900">Featured AI Cohort Candidates</h2>
+            <p className="text-xs text-slate-500">Select a candidate profile to initialize an adaptive, syllabus-targeted technical interview.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowAllModal(true)}
+            className="text-xs font-bold text-[#007A63] hover:underline cursor-pointer"
           >
-            All Candidates (20)
+            View all 20 candidates →
           </button>
         </div>
-      </header>
 
-      {/* =========================
-          MAIN
-      ========================== */}
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-10 flex-1 w-full">
-        
-        {/* Hero Section */}
-        <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm p-6 sm:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative overflow-hidden">
-          <div className="lg:col-span-8 space-y-5">
-            <div className="inline-flex items-center space-x-2 bg-[#E6F4F1] border border-[#007A63]/20 px-3 py-1 rounded-full text-xs font-bold text-[#007A63]">
-              <span className="w-2 h-2 rounded-full bg-[#007A63] animate-ping"></span>
-              <span>31-Day AI Cohort Grounded · Groq Llama 3.3 70B</span>
-            </div>
-            <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[#0F172A] leading-tight">
-              The Most Advanced AI Technical Interview Agent
-            </h1>
-            <p className="text-base sm:text-lg text-[#475569] leading-relaxed">
-              Conduct autonomous, curriculum-grounded technical interviews tailored to real engineering missions, skipped syllabus days, and candidate performance signals. Powered by real-time RAG and adaptive follow-up reasoning.
-            </p>
-            <div className="flex flex-wrap gap-4 pt-2">
-              <Button 
-                onClick={() => handleStartInterview(mockCandidates[0])}
-                disabled={navigatingId !== null}
-                className="bg-[#007A63] hover:bg-[#006250] text-white px-6 py-3 rounded-xl font-bold shadow-md shadow-[#007A63]/20 flex items-center space-x-2"
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {all20Candidates.slice(0, 3).map((candidate, idx) => {
+            const isStarting = navigatingId === candidate.id;
+            return (
+              <div
+                key={candidate.id}
+                className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all duration-200 p-6 flex flex-col justify-between relative group hover:border-[#007A63]"
               >
-                <span>{navigatingId === mockCandidates[0].id ? 'Starting Session...' : 'Start Featured Interview (Sarah Johnson)'}</span>
-                <span>▶</span>
-              </Button>
-              <button 
-                onClick={() => setShowAllModal(true)}
-                className="border-2 border-[#CBD5E1] hover:border-[#007A63] hover:text-[#007A63] text-[#475569] px-5 py-3 rounded-xl font-bold transition-colors"
-              >
-                Browse All 20 Candidates ▾
-              </button>
-            </div>
-          </div>
-
-          <div className="lg:col-span-4 bg-gradient-to-br from-[#151E28] to-[#1E293B] rounded-2xl p-6 text-white border border-[#334155] shadow-lg space-y-4">
-            <div className="text-xs uppercase font-bold text-[#10B981] tracking-wider">Cloud Engine Status</div>
-            <div className="space-y-3 text-sm text-[#94A3B8]">
-              <div className="flex justify-between items-center pb-2 border-b border-[#334155]">
-                <span>LLM Engine</span>
-                <span className="font-semibold text-white">Llama-3.3-70B-Versatile</span>
-              </div>
-              <div className="flex justify-between items-center pb-2 border-b border-[#334155]">
-                <span>Knowledge Base</span>
-                <span className="font-semibold text-white">31-Day AI Cohort</span>
-              </div>
-              <div className="flex justify-between items-center pb-2 border-b border-[#334155]">
-                <span>Candidate Dataset</span>
-                <span className="font-semibold text-white">20 Real Profiles</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Evaluation Standard</span>
-                <span className="font-semibold text-[#10B981]">1-10 Rubric + Report</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Candidate Selection Section */}
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-[#0F172A]">Featured AI Cohort Candidates</h2>
-              <p className="text-sm text-[#64748B]">Select a candidate profile to initialize an adaptive, syllabus-targeted technical interview.</p>
-            </div>
-            <button
-              onClick={() => setShowAllModal(true)}
-              className="text-sm font-bold text-[#007A63] hover:underline flex items-center space-x-1"
-            >
-              <span>View all 20 candidates</span>
-              <span>→</span>
-            </button>
-          </div>
-
-          {/* Grid of Candidate Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {mockCandidates.map((candidate, idx) => {
-              const isStarting = navigatingId === candidate.id;
-              return (
-                <div
-                  key={candidate.id}
-                  className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm hover:shadow-md transition-all duration-200 p-6 flex flex-col justify-between relative group hover:border-[#007A63]"
-                >
-                  <div className="space-y-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-11 h-11 rounded-full bg-[#E6F4F1] border-2 border-[#007A63] flex items-center justify-center font-bold text-[#007A63] text-base">
-                          {candidate.name.split(' ').map(n => n[0]).join('')}
-                        </div>
-                        <div>
-                          <h3 className="font-bold text-[#0F172A] text-lg group-hover:text-[#007A63] transition-colors">
-                            {candidate.name}
-                          </h3>
-                          <p className="text-xs text-[#64748B] font-medium">{candidate.jobRole} · {candidate.yearsExperience || 5} yrs exp</p>
-                        </div>
+                <div className="space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-11 h-11 rounded-full bg-[#E6F4F1] border-2 border-[#007A63] flex items-center justify-center font-black text-[#007A63] text-base">
+                        {candidate.name.split(' ').map(n => n[0]).join('')}
                       </div>
-                      <span className="bg-[#E6F4F1] text-[#007A63] text-xs font-bold px-2.5 py-1 rounded-full">
-                        CAND-00{idx + 1}
-                      </span>
-                    </div>
-
-                    <div className="space-y-2 pt-2 border-t border-[#F1F5F9]">
-                      <div className="flex justify-between text-xs text-[#64748B]">
-                        <span>Cohort Progress</span>
-                        <span className="font-bold text-[#0F172A]">{candidate.progressPercent}%</span>
-                      </div>
-                      <div className="w-full bg-[#E2E8F0] h-2 rounded-full overflow-hidden">
-                        <div 
-                          className="bg-[#007A63] h-full rounded-full transition-all duration-500" 
-                          style={{ width: `${candidate.progressPercent}%` }}
-                        />
+                      <div>
+                        <h3 className="font-bold text-slate-900 text-lg group-hover:text-[#007A63] transition-colors">
+                          {candidate.name}
+                        </h3>
+                        <p className="text-xs text-slate-500 font-medium">{candidate.jobRole} · {candidate.yearsExperience || 5} yrs exp</p>
                       </div>
                     </div>
-
-                    <div className="space-y-1.5 text-xs">
-                      <div className="text-[#64748B] font-semibold">Focus Topic / Initial Day:</div>
-                      <div className="text-[#0F172A] font-bold bg-[#F8FAFC] p-2 rounded-lg border border-[#E2E8F0]">
-                        {candidate.currentTopic}
-                      </div>
-                    </div>
-
-                    {candidate.skippedTopics.length > 0 && (
-                      <div className="space-y-1 text-xs">
-                        <div className="text-[#EF4444] font-semibold">Target Gap Area:</div>
-                        <div className="text-[#475569] text-xs line-clamp-1">
-                          {candidate.skippedTopics.join(', ')}
-                        </div>
-                      </div>
-                    )}
+                    <span className="bg-[#E6F4F1] text-[#007A63] text-xs font-bold px-2.5 py-1 rounded-full">
+                      {candidate.backendPayload.member.id}
+                    </span>
                   </div>
 
-                  <div className="pt-6">
-                    <Button
-                      onClick={() => handleStartInterview(candidate)}
-                      disabled={navigatingId !== null}
-                      className="w-full bg-[#007A63] hover:bg-[#006250] text-white py-2.5 rounded-xl font-bold transition-all flex items-center justify-center space-x-2"
-                    >
-                      <span>{isStarting ? 'Initializing...' : 'START INTERVIEW'}</span>
-                      {!isStarting && <span>▶</span>}
-                    </Button>
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
+                    <div className="flex justify-between text-xs text-slate-500">
+                      <span>Cohort Progress</span>
+                      <span className="font-bold text-slate-900">{candidate.progressPercent}%</span>
+                    </div>
+                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                      <div 
+                        className="bg-[#007A63] h-full rounded-full transition-all duration-500" 
+                        style={{ width: `${candidate.progressPercent}%` }}
+                      />
+                    </div>
                   </div>
 
+                  <div className="space-y-1.5 text-xs">
+                    <div className="text-slate-500 font-semibold">Focus Topic / Initial Day:</div>
+                    <div className="text-slate-900 font-bold bg-slate-50 p-2 rounded-lg border border-slate-200">
+                      {candidate.currentTopic}
+                    </div>
+                  </div>
+
+                  {candidate.skippedTopics.length > 0 && (
+                    <div className="space-y-1 text-xs">
+                      <div className="text-rose-500 font-semibold">Target Gap Area:</div>
+                      <div className="text-slate-600 text-xs line-clamp-1">
+                        {candidate.skippedTopics.join(', ')}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              );
-            })}
-          </div>
 
+                <div className="pt-6">
+                  <Button
+                    type="button"
+                    onClick={() => handleStartInterview(candidate)}
+                    disabled={navigatingId !== null}
+                    className="w-full bg-[#007A63] hover:bg-[#006250] text-white py-2.5 rounded-xl font-bold transition-all flex items-center justify-center space-x-2 cursor-pointer shadow-sm"
+                  >
+                    <span>{isStarting ? 'Initializing...' : 'START INTERVIEW'}</span>
+                    {!isStarting && <span>▶</span>}
+                  </Button>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {/* Modal: All 20 Candidates Selector */}
       {showAllModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-[#E2E8F0] overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="px-6 py-4 border-b border-[#E2E8F0] flex items-center justify-between bg-[#151E28] text-white">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-[#111827] text-white">
               <div>
                 <h3 className="text-xl font-bold">Select from 20 AI Cohort Candidates</h3>
-                <p className="text-xs text-[#CBD5E1]">Every candidate is grounded in real 31-day syllabus mission records.</p>
+                <p className="text-xs text-slate-400">All 20 profiles are grounded in the 31-day syllabus mission records.</p>
               </div>
               <button 
+                type="button"
                 onClick={() => setShowAllModal(false)}
-                className="text-white hover:text-red-400 font-bold text-2xl px-2"
+                className="text-slate-400 hover:text-white font-bold text-2xl px-2 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
-            <div className="p-6 overflow-y-auto space-y-4 divide-y divide-[#F1F5F9] flex-1">
-              {all20Candidates.map((c, i) => (
-                <div key={c.id} className="pt-4 first:pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#F8FAFC] p-3 rounded-xl transition-colors">
+            {/* Search Bar */}
+            <div className="p-4 bg-slate-50 border-b border-slate-200">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Search candidates by name, job role, or topic..."
+                className="w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-xs text-slate-900 placeholder-slate-400 outline-none focus:border-[#007A63] focus:ring-2 focus:ring-[#007A63]/20 transition-all"
+              />
+            </div>
+
+            {/* Candidates List */}
+            <div className="p-6 overflow-y-auto space-y-4 divide-y divide-slate-100 flex-1">
+              {filteredCandidates.map((c) => (
+                <div key={c.id} className="pt-4 first:pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50 p-3.5 rounded-xl transition-colors">
                   <div className="space-y-1">
                     <div className="flex items-center space-x-3">
-                      <span className="font-bold text-[#0F172A] text-base">{c.name}</span>
+                      <span className="font-bold text-slate-900 text-base">{c.name}</span>
                       <span className="text-xs bg-[#E6F4F1] text-[#007A63] font-bold px-2 py-0.5 rounded-full">
                         {c.backendPayload.member.id}
                       </span>
+                      <span className="text-xs font-semibold text-slate-500">
+                        {c.progressPercent}% Cohort Mastery
+                      </span>
                     </div>
-                    <p className="text-xs text-[#64748B]">
+                    <p className="text-xs text-slate-500">
                       {c.jobRole} · {c.education || 'CS Degree'} · {c.yearsExperience || 0} years experience
                     </p>
-                    <p className="text-xs text-[#007A63] font-medium">
-                      🎯 Target Topic: <strong>{c.currentTopic}</strong>
+                    <p className="text-xs text-[#007A63] font-semibold">
+                      🎯 Target Focus: {c.currentTopic}
                     </p>
                   </div>
 
                   <Button
+                    type="button"
                     onClick={() => {
                       setShowAllModal(false);
                       handleStartInterview(c);
                     }}
                     disabled={navigatingId !== null}
-                    className="bg-[#007A63] hover:bg-[#006250] text-white text-xs px-4 py-2 rounded-lg font-bold shrink-0"
+                    className="bg-[#007A63] hover:bg-[#006250] text-white text-xs px-4 py-2.5 rounded-xl font-bold shrink-0 cursor-pointer shadow-sm"
                   >
                     Start Interview ▶
                   </Button>
@@ -369,10 +286,11 @@ const [newCandidate, setNewCandidate] = useState({
               ))}
             </div>
 
-            <div className="px-6 py-3 border-t border-[#E2E8F0] bg-[#F8FAFC] flex justify-end">
+            <div className="px-6 py-3 border-t border-slate-200 bg-slate-50 flex justify-end">
               <button 
+                type="button"
                 onClick={() => setShowAllModal(false)}
-                className="text-sm font-semibold text-[#64748B] hover:text-[#0F172A]"
+                className="text-sm font-semibold text-slate-500 hover:text-slate-900 cursor-pointer"
               >
                 Close
               </button>
@@ -382,8 +300,8 @@ const [newCandidate, setNewCandidate] = useState({
       )}
 
       {/* Footer */}
-      <footer className="bg-white border-t border-[#E2E8F0] py-6 px-6 sm:px-12 text-center text-xs text-[#64748B]">
-        InterviewIQ AI — Autonomous AI Technical Interview Agent · 24/7 Cloud Engine on Render
+      <footer className="bg-white border-t border-slate-200 py-6 px-6 sm:px-12 text-center text-xs text-slate-500">
+        The Interview IQ — Autonomous AI Technical Interview Agent · 24/7 Cloud Engine on Render
       </footer>
     </PageTransition>
   );
