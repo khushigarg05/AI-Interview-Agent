@@ -1,22 +1,23 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { PageTransition } from '@/components/ui/PageTransition';
-import { mockCandidates } from '@/lib/mockData';
+import { all20Candidates, mockCandidates } from '@/lib/mockData';
 import { startInterview, sendAnswer, skipQuestion } from '@/lib/api';
+import { CandidateProfile } from '@/lib/types';
 
 function InterviewSessionContent() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
-  const candidateId = (params?.id as string) || 'khushi-garg';
+  const candidateId = (params?.id as string) || 'sarah-johnson';
 
-  const candidate = mockCandidates.find(c => c.id === candidateId) || mockCandidates[2];
+  const candidate: CandidateProfile = all20Candidates.find(c => c.id === candidateId) || all20Candidates[0];
 
   const sessionId = searchParams?.get('sessionId') || `sess-${candidateId}-${Date.now()}`;
 
@@ -24,11 +25,22 @@ function InterviewSessionContent() {
   const [turns, setTurns] = useState<any[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isListening, setIsListening] = useState(false);
 
   // Dynamic backend states
   const [currentQuestion, setCurrentQuestion] = useState<number>(1);
   const [progress, setProgress] = useState<string>("1 / 8");
   const [currentTopic, setCurrentTopic] = useState<string>(candidate.currentTopic);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [turns]);
 
   const parseProgressPercent = (progStr: string) => {
     try {
@@ -37,37 +49,36 @@ function InterviewSessionContent() {
         const current = parseFloat(parts[0].trim());
         const total = parseFloat(parts[1].trim());
         if (total > 0) {
-          return Math.round((current / total) * 100);
+          return Math.min(Math.round((current / total) * 100), 100);
         }
       }
     } catch (e) {
       console.error('Failed to parse progress percent', e);
     }
-    return 25; // fallback
-  };
-
-  const getTopicDescription = (topic: string) => {
-    const found = mockCandidates.find(c => c.currentTopic.toLowerCase() === topic.toLowerCase());
-    return found ? found.currentTopicDescription : "Assessing knowledge of vector storage and retrieval architecture.";
+    return Math.round((currentQuestion / 8) * 100);
   };
 
   useEffect(() => {
     if (!sessionId) return;
 
-    // Check if we have saved turns and states in sessionStorage
+    // Check if we have saved turns in sessionStorage
     const saved = sessionStorage.getItem(`turns_${sessionId}`);
     const savedQuestion = sessionStorage.getItem(`question_${sessionId}`);
     const savedProgress = sessionStorage.getItem(`progress_${sessionId}`);
     const savedTopic = sessionStorage.getItem(`topic_${sessionId}`);
 
     if (saved) {
-      setTurns(JSON.parse(saved));
+      try {
+        setTurns(JSON.parse(saved));
+      } catch (e) {
+        console.error('Failed parsing turns', e);
+      }
       if (savedQuestion) setCurrentQuestion(Number(savedQuestion));
       if (savedProgress) setProgress(savedProgress);
       if (savedTopic) setCurrentTopic(savedTopic);
       setIsLoading(false);
     } else {
-      // Fallback start if loaded directly
+      // Initialize interview session from API
       setIsLoading(true);
       startInterview(sessionId, candidate.backendPayload)
         .then(res => {
@@ -102,12 +113,48 @@ function InterviewSessionContent() {
           setIsLoading(false);
         });
     }
-  }, [sessionId, candidateId, candidate.backendPayload]);
+  }, [sessionId, candidateId]);
+
+  // Voice speech-to-text recognition
+  const toggleVoiceInput = () => {
+    if (typeof window === 'undefined') return;
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Voice input is not supported in this browser. Please use Google Chrome.");
+      return;
+    }
+
+    if (isListening) {
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+
+      recognition.onstart = () => setIsListening(true);
+      recognition.onend = () => setIsListening(false);
+      recognition.onerror = () => setIsListening(false);
+
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInputMessage(prev => prev ? `${prev} ${transcript}` : transcript);
+      };
+
+      recognition.start();
+    } catch (e) {
+      console.error('Speech recognition error:', e);
+      setIsListening(false);
+    }
+  };
 
   const handleSubmitTurn = async () => {
     if (!inputMessage.trim() || isSubmitting) return;
 
-    const userMessage = inputMessage;
+    const userMessage = inputMessage.trim();
     setInputMessage('');
     setIsSubmitting(true);
 
@@ -189,7 +236,6 @@ function InterviewSessionContent() {
       setTurns(finalTurns);
       sessionStorage.setItem(`turns_${sessionId}`, JSON.stringify(finalTurns));
 
-      // Update backend-driven progress states
       if (response.questionNumber !== undefined) {
         setCurrentQuestion(response.questionNumber);
         sessionStorage.setItem(`question_${sessionId}`, String(response.questionNumber));
@@ -214,257 +260,182 @@ function InterviewSessionContent() {
   };
 
   const handleEndSession = () => {
-    router.push(`/feedback/${candidateId}?sessionId=${sessionId}`);
+    if (confirm("Are you sure you want to conclude the interview and view your feedback scorecard?")) {
+      router.push(`/feedback/${candidateId}?sessionId=${sessionId}`);
+    }
   };
 
   return (
     <PageTransition className="min-h-screen flex flex-col bg-[#F8FAFC]">
-      {/* Top Navbar Header matching Image 1 */}
-      <header className="bg-[#151E28] text-white px-6 py-3 flex items-center justify-between shadow-sm">
-        <div className="flex items-center space-x-8">
-          <Link href="/" className="text-xl font-bold tracking-tight text-white hover:opacity-90">
-            The Interview IQ
+      {/* Top Navbar Header */}
+      <header className="bg-[#151E28] text-white px-6 py-3 flex items-center justify-between shadow-md border-b border-[#1E293B]">
+        <div className="flex items-center space-x-6">
+          <Link href="/" className="text-lg font-bold tracking-tight text-white hover:opacity-90 flex items-center space-x-2">
+            <span className="w-7 h-7 rounded bg-[#007A63] flex items-center justify-center font-bold text-xs">IQ</span>
+            <span>The Interview IQ</span>
           </Link>
-
-          {/* Nav tabs matching Image 1 */}
-          <nav className="hidden md:flex items-center space-x-6 text-sm font-medium">
-            <Link href="/" className="text-[#CBD5E1] hover:text-white transition-colors py-1">
-              Dashboard
-            </Link>
-            <Link href="#" className="text-[#007A63] font-bold border-b-2 border-[#007A63] py-1">
-              Sessions
-            </Link>
-            <Link href="#" className="text-[#CBD5E1] hover:text-white transition-colors py-1">
-              Analytics
-            </Link>
-            <Link href="#" className="text-[#CBD5E1] hover:text-white transition-colors py-1">
-              Settings
-            </Link>
-          </nav>
+          <span className="hidden md:inline-block bg-[#1E293B] text-[#10B981] text-xs font-semibold px-2.5 py-0.5 rounded-full border border-[#334155]">
+            Live Cloud Assessment
+          </span>
         </div>
 
-        {/* Right Header Status & Avatar matching Image 1 */}
-        <div className="flex items-center space-x-4 text-sm">
-          <div className="bg-[#1E293B] border border-[#334155] px-3 py-1 rounded-full text-xs text-[#94A3B8]">
-            Status: <span className="text-white font-medium">Paused</span>
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 bg-[#1E293B] px-3 py-1 rounded-full text-xs text-[#CBD5E1] border border-[#334155]">
+            <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse"></span>
+            <span>Active Session</span>
           </div>
-
-          <div className="flex items-center space-x-2 font-medium">
-            <span className="text-[#007A63]">👤</span>
-            <span className="text-white">{candidate.name}</span>
-          </div>
-
-          <button className="text-[#CBD5E1] hover:text-white p-1" aria-label="Notifications">
-            🔔
-          </button>
-
-          <img
-            src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=100&q=80"
-            alt="User Avatar"
-            className="w-8 h-8 rounded-full border border-gray-600 object-cover"
-          />
-
-          <Button
-            variant="danger"
-            size="sm"
+          <button
             onClick={handleEndSession}
-            className="border-dashed"
+            className="text-xs bg-[#EF4444]/10 hover:bg-[#EF4444] text-[#EF4444] hover:text-white border border-[#EF4444]/30 px-3 py-1.5 rounded-lg font-bold transition-colors"
           >
             End Session
-          </Button>
+          </button>
         </div>
       </header>
 
-      {/* Main Workspace matching Image 1 */}
-      <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Main Workspace Layout */}
+      <div className="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         
-        {/* Left Sidebar: Candidate Profile (Live Session Overview) */}
-        <div className="lg:col-span-3 space-y-6 bg-white p-5 rounded-xl border border-[#E2E8F0] shadow-sm">
-          <div>
-            <h2 className="text-lg font-bold text-[#0F172A]">Candidate Profile</h2>
-            <p className="text-xs text-[#64748B]">Live Session Overview</p>
-          </div>
+        {/* Left Sidebar */}
+        <div className="lg:col-span-4 space-y-5">
+          {/* Candidate Profile Card */}
+          <div className="bg-white rounded-2xl border border-[#E2E8F0] p-5 shadow-sm space-y-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 rounded-full bg-[#E6F4F1] border-2 border-[#007A63] flex items-center justify-center font-black text-[#007A63] text-lg">
+                {candidate.name.split(' ').map(n => n[0]).join('')}
+              </div>
+              <div>
+                <h3 className="font-bold text-[#0F172A] text-base">{candidate.name}</h3>
+                <p className="text-xs text-[#64748B]">{candidate.jobRole}</p>
+                <p className="text-xs text-[#007A63] font-semibold">{candidate.education || 'CS Graduate'}</p>
+              </div>
+            </div>
 
-          <hr className="border-[#E2E8F0]" />
-
-          {/* Name */}
-          <div className="space-y-1">
-            <div className="text-xs font-semibold text-[#64748B]">Name</div>
-            <div className="flex items-center space-x-2 font-bold text-[#0F172A]">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] inline-block animate-pulse" />
-              <span>{candidate.name}</span>
+            {/* Progress Section */}
+            <div className="space-y-2 pt-3 border-t border-[#F1F5F9]">
+              <div className="flex justify-between text-xs">
+                <span className="font-semibold text-[#64748B]">Interview Progress:</span>
+                <span className="font-bold text-[#007A63]">{progress} Questions</span>
+              </div>
+              <div className="w-full bg-[#E2E8F0] h-2.5 rounded-full overflow-hidden">
+                <div 
+                  className="bg-[#007A63] h-full rounded-full transition-all duration-500" 
+                  style={{ width: `${parseProgressPercent(progress)}%` }}
+                />
+              </div>
             </div>
           </div>
 
-          {/* Progress */}
-          <div className="space-y-1.5">
-            <div className="flex justify-between text-xs font-semibold">
-              <span className="text-[#64748B]">Progress</span>
-              <span className="text-[#007A63]">{progress}</span>
+          {/* Active Topic Focus Card */}
+          <div className="bg-gradient-to-br from-[#151E28] to-[#1E293B] rounded-2xl p-5 text-white border border-[#334155] shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase text-[#10B981] tracking-wider">Current Topic Focus</span>
+              <span className="text-xs bg-[#334155] text-white px-2 py-0.5 rounded font-mono">Q{currentQuestion} of 8</span>
             </div>
-            <ProgressBar progress={parseProgressPercent(progress)} color="teal" height="h-2" />
-          </div>
-
-          {/* Skipped Topics */}
-          <div className="space-y-2">
-            <div className="text-xs font-semibold text-[#64748B]">Skipped Topics</div>
-            <div className="flex flex-wrap gap-1.5">
-              {candidate.skippedTopics.map((topic) => (
-                <span key={topic} className="bg-[#F1F5F9] text-[#475569] border border-[#CBD5E1] text-xs px-2.5 py-1 rounded-full font-medium">
-                  {topic}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Current Topic Card matching Image 1 */}
-          <div className="bg-[#E6F4F1] border border-[#B2DFD6] rounded-xl p-4 space-y-1 mt-4">
-            <div className="text-xs font-semibold text-[#64748B]">Current Topic</div>
-            <h3 className="text-base font-bold text-[#007A63]">{currentTopic}</h3>
-            <p className="text-xs text-[#475569] leading-relaxed">
-              {getTopicDescription(currentTopic)}
+            <h4 className="text-base font-bold text-white leading-snug">{currentTopic}</h4>
+            <p className="text-xs text-[#94A3B8] leading-relaxed">
+              Questions are grounded in the 31-Day AI Cohort curriculum with real-time adaptive difficulty scaling.
             </p>
           </div>
         </div>
 
-        {/* Right Workspace: Chat & Question Session */}
-        <div className="lg:col-span-9 flex flex-col justify-between bg-white rounded-xl border border-[#E2E8F0] shadow-sm overflow-hidden min-h-[600px]">
+        {/* Right Chat Stream */}
+        <div className="lg:col-span-8 bg-white rounded-2xl border border-[#E2E8F0] shadow-sm flex flex-col h-[70vh] sm:h-[75vh] overflow-hidden">
           
-          {/* Header Bar */}
-          <div className="p-4 sm:p-5 border-b border-[#E2E8F0] flex items-center justify-between bg-white">
-            <div>
-              <h2 className="text-lg font-bold text-[#0F172A]">
-                Question {currentQuestion} of {candidate.totalQuestions}
-              </h2>
-              <p className="text-xs text-[#64748B]">Topic: {currentTopic}</p>
-            </div>
-
-            <div className="flex items-center space-x-3 text-xs text-[#64748B]">
-              <span>⏱ 05:24 elapsed</span>
-              <button className="text-gray-400 hover:text-gray-600 p-1 text-base">⋮</button>
-            </div>
-          </div>
-
-          {/* Conversation Chat Stream */}
-          <div className="p-4 sm:p-6 space-y-6 flex-1 overflow-y-auto bg-[#F8FAFC]/50">
+          {/* Chat Messages List */}
+          <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4">
             {isLoading ? (
-              <div className="flex flex-col items-center justify-center h-full py-20 space-y-3">
-                <span className="text-3xl animate-spin">⏳</span>
-                <span className="text-sm font-medium text-[#475569]">Initializing session with backend...</span>
-              </div>
-            ) : turns.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-[#64748B] text-sm">
-                No conversation turns yet.
+              <div className="flex items-center justify-center h-full text-center space-y-2">
+                <div className="space-y-3">
+                  <div className="w-10 h-10 border-4 border-[#007A63] border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <p className="text-sm font-semibold text-[#64748B]">Connecting to AI Interviewer...</p>
+                </div>
               </div>
             ) : (
-              turns.map((turn) => {
-                if (turn.sender === 'candidate') {
-                  return (
-                    <div key={turn.id} className="flex justify-end items-start space-x-3 max-w-3xl ml-auto animate-fade-in">
-                      <div className="bg-[#EEF2FF] border border-[#C7D2FE] rounded-2xl p-4 text-sm text-[#1E293B] shadow-sm leading-relaxed max-w-2xl">
-                        <div className="text-xs font-bold text-[#4338CA] mb-1 text-right">
-                          {turn.senderName}
-                        </div>
-                        <p>{turn.text}</p>
-                      </div>
-                      <img
-                        src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=100&q=80"
-                        alt="Candidate Avatar"
-                        className="w-8 h-8 rounded-full border border-indigo-200 object-cover shrink-0 mt-1"
-                      />
-                    </div>
-                  );
-                }
-
+              turns.map((turn, index) => {
+                const isInterviewer = turn.sender === 'interviewer';
                 return (
-                  <div key={turn.id} className="flex justify-start items-start space-x-3 max-w-3xl mr-auto animate-fade-in">
-                    <div className="w-8 h-8 rounded-full bg-[#007A63] text-white flex items-center justify-center font-bold text-sm shrink-0 mt-1">
-                      🤖
-                    </div>
-                    <div className="bg-white border border-[#E2E8F0] rounded-2xl p-4 text-sm text-[#0F172A] shadow-sm leading-relaxed max-w-2xl">
-                      <div className="text-xs font-bold text-[#007A63] mb-1">
-                        {turn.senderName}
+                  <div 
+                    key={turn.id || index}
+                    className={`flex ${isInterviewer ? 'justify-start' : 'justify-end'} animate-in fade-in slide-in-from-bottom-2 duration-300`}
+                  >
+                    <div className={`max-w-[85%] rounded-2xl p-4 sm:p-5 shadow-sm space-y-1.5 ${
+                      isInterviewer 
+                        ? 'bg-[#F8FAFC] border border-[#E2E8F0] text-[#0F172A]' 
+                        : 'bg-[#007A63] text-white font-medium'
+                    }`}>
+                      <div className="flex items-center justify-between text-xs opacity-75 font-semibold">
+                        <span>{turn.senderName}</span>
                       </div>
-                      <p>{turn.text}</p>
+                      <div className="text-sm sm:text-base leading-relaxed whitespace-pre-wrap">
+                        {turn.text}
+                      </div>
                     </div>
                   </div>
                 );
               })
             )}
+            <div ref={messagesEndRef} />
           </div>
 
-          {/* Bottom Input Box & Action Row matching Image 1 */}
-          <div className="p-4 border-t border-[#E2E8F0] bg-white space-y-3">
-            <div className="relative border border-[#CBD5E1] rounded-xl p-3 focus-within:border-[#007A63] transition-colors bg-white">
+          {/* Chat Input Bar */}
+          <div className="p-4 border-t border-[#E2E8F0] bg-[#F8FAFC] space-y-3">
+            <div className="relative">
               <textarea
                 value={inputMessage}
-                onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="Type your response here..."
+                onChange={e => setInputMessage(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmitTurn();
+                  }
+                }}
+                disabled={isSubmitting || isLoading}
+                placeholder="Type your technical explanation here (or click the mic icon to speak)..."
                 rows={3}
-                className="w-full text-sm text-[#0F172A] focus:outline-none resize-none bg-transparent"
-                disabled={isLoading || isSubmitting}
+                className="w-full bg-white border border-[#CBD5E1] focus:border-[#007A63] focus:ring-2 focus:ring-[#007A63]/20 rounded-xl p-3 text-sm text-[#0F172A] placeholder-[#94A3B8] resize-none outline-none transition-all"
               />
-
-              {/* Action Icons inside box right side */}
-              <div className="absolute bottom-3 right-3 flex items-center space-x-2">
-                <button className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-700" title="Voice Input">
-                  🎙️
-                </button>
-                <button className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500 hover:text-gray-700" title="Code Editor">
-                  <code>&lt;&gt;</code>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={toggleVoiceInput}
+                className={`absolute right-3 bottom-3 p-2 rounded-lg text-xs font-semibold flex items-center space-x-1 transition-all ${
+                  isListening ? 'bg-red-500 text-white animate-pulse' : 'bg-[#E2E8F0] hover:bg-[#CBD5E1] text-[#475569]'
+                }`}
+                title="Voice Speech Input"
+              >
+                <span>🎙️</span>
+                <span>{isListening ? 'Listening...' : 'Voice'}</span>
+              </button>
             </div>
 
-            {/* Bottom Actions Bar */}
-            <div className="flex items-center justify-between pt-1">
+            <div className="flex items-center justify-between gap-3">
               <button
-                onClick={handleEndSession}
-                className="text-xs font-semibold text-red-500 hover:underline border border-dashed border-red-300 px-2.5 py-1 rounded"
+                onClick={handleSkip}
+                disabled={isSubmitting || isLoading}
+                className="text-xs text-[#64748B] hover:text-[#EF4444] font-bold px-3 py-2 rounded-lg transition-colors"
               >
-                End Session
+                Skip Question ⏭
               </button>
 
-              <div className="flex items-center space-x-3">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleSkip}
-                  disabled={isLoading || isSubmitting}
-                >
-                  Skip
-                </Button>
-
-                <Button
-                  variant="primary"
-                  size="md"
-                  onClick={handleSubmitTurn}
-                  className="px-6"
-                  disabled={isLoading || isSubmitting || !inputMessage.trim()}
-                >
-                  {isSubmitting ? 'Submitting...' : 'Submit ▶'}
-                </Button>
-              </div>
+              <Button
+                onClick={handleSubmitTurn}
+                disabled={isSubmitting || isLoading || !inputMessage.trim()}
+                className="bg-[#007A63] hover:bg-[#006250] text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-md shadow-[#007A63]/20 flex items-center space-x-2"
+              >
+                <span>{isSubmitting ? 'Evaluating...' : 'Submit Answer'}</span>
+                {!isSubmitting && <span>▶</span>}
+              </Button>
             </div>
           </div>
-
         </div>
-
       </div>
     </PageTransition>
   );
 }
 
-export default function InterviewSessionPage() {
+export default function InterviewPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
-        <div className="text-center space-y-4">
-          <div className="text-xl font-semibold text-[#0F172A]">Loading interview session...</div>
-          <div className="w-16 h-1.5 bg-[#007A63] rounded animate-pulse mx-auto"></div>
-        </div>
-      </div>
-    }>
+    <Suspense fallback={<div className="p-8 text-center text-sm font-semibold">Loading assessment workspace...</div>}>
       <InterviewSessionContent />
     </Suspense>
   );
