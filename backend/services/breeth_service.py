@@ -186,6 +186,8 @@ class BreethService:
         last_question = questions[-1] if questions else {}
         last_q_text = last_question.get("question_text", "Technical Question")
         topic = last_question.get("topic", "AI Fundamentals")
+        is_last_q_follow_up = last_question.get("is_follow_up", False)
+        is_skipped = candidate_answer.lower() in ["skip", "skip this question", "[skipped question]"]
 
         # Log candidate response to Breeth
         self._log_to_breeth(session_id, "user", candidate_answer, {"topic": topic, "question": last_q_text})
@@ -229,8 +231,12 @@ class BreethService:
                 progress=f"{settings.MIN_QUESTIONS} / {settings.MIN_QUESTIONS}",
             )
 
-        # Adaptive follow-up if candidate's answer was incomplete (only if before question 8)
-        if needs_follow_up and total_asked < settings.MIN_QUESTIONS:
+        # STRICT NO-LOOP RULE:
+        # Only ask 1 follow-up on a topic if:
+        # 1. Answer genuinely needed follow-up
+        # 2. Previous question was NOT already a follow-up (prevents looping!)
+        # 3. Candidate did not explicitly skip
+        if needs_follow_up and not is_last_q_follow_up and not is_skipped and total_asked < settings.MIN_QUESTIONS:
             follow_up_text = llm_service.generate_follow_up(
                 previous_question=last_q_text,
                 candidate_answer=candidate_answer,
@@ -248,7 +254,7 @@ class BreethService:
             )
             session_service.add_question(session_id, follow_up_q.model_dump())
 
-            reply = f"Thanks for the answer. {evaluation_text}\n\nFollow-up Question:\n{follow_up_text}"
+            reply = f"{evaluation_text}\n\nFollow-up Question ({total_asked + 1}/{settings.MIN_QUESTIONS} - {topic}):\n{follow_up_text}"
             self._log_to_breeth(session_id, "assistant", reply, {"is_follow_up": True})
             return InterviewTurnResponse(
                 reply=reply,
@@ -259,7 +265,7 @@ class BreethService:
                 progress=f"{total_asked + 1} / {settings.MIN_QUESTIONS}",
             )
 
-        # Otherwise pick next curriculum day and ask next question
+        # Otherwise GUARANTEED advance to next curriculum topic day!
         curriculum = candidate_service.get_curriculum()
         days_list = curriculum.get("days", [])
         day_index = total_asked % len(days_list) if days_list else 0
@@ -290,7 +296,8 @@ class BreethService:
         )
         session_service.add_question(session_id, next_q.model_dump())
 
-        reply = f"Good. {evaluation_text}\n\nNext Question ({total_asked + 1}/{settings.MIN_QUESTIONS} - Day {next_day_num} {next_topic}):\n{next_q_text}"
+        ack = "Question skipped. Moving to next topic." if is_skipped else evaluation_text
+        reply = f"{ack}\n\nNext Question ({total_asked + 1}/{settings.MIN_QUESTIONS} - Day {next_day_num} {next_topic}):\n{next_q_text}"
         self._log_to_breeth(session_id, "assistant", reply, {"topic": next_topic, "day": next_day_num})
         return InterviewTurnResponse(
             reply=reply,
