@@ -2,6 +2,9 @@ export interface MemberInfo {
   id: string;
   name: string;
   jobRole: string;
+  yearsExperience?: number;
+  education?: string;
+  status?: string;
 }
 
 export interface MissionInfo {
@@ -38,6 +41,8 @@ export interface BackendFeedback {
   summary: string;
   strengths: string[];
   gaps: string[];
+  improvements?: string[];
+  areasToImprove?: string[];
   next: string[];
   overall_score?: number;
   recommendation?: string;
@@ -49,6 +54,7 @@ export interface BackendInterviewResponse {
   done: boolean;
   feedback: BackendFeedback | null;
   questionNumber?: number;
+  totalQuestions?: number;
   progress?: string;
   currentTopic?: string;
 }
@@ -57,7 +63,9 @@ export interface BackendInterviewResponse {
 export interface CandidateProfile {
   id: string;
   name: string;
-  jobRole?: string;
+  jobRole: string;
+  yearsExperience?: number;
+  education?: string;
   avatar?: string;
   progressPercent: number;
   currentQuestion: number;
@@ -65,7 +73,7 @@ export interface CandidateProfile {
   skippedTopics: string[];
   currentTopic: string;
   currentTopicDescription: string;
-  backendPayload?: BackendCandidate;
+  backendPayload: BackendCandidate;
 }
 
 export interface ConversationTurn {
@@ -91,7 +99,7 @@ export interface TopicPerformance {
   topic: string;
   subtopics: string;
   score: number;
-  color?: 'teal' | 'orange';
+  color?: 'teal' | 'orange' | 'green' | 'red';
 }
 
 export interface FeedbackReport {

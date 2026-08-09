@@ -4,24 +4,23 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 import { PageTransition } from '@/components/ui/PageTransition';
-import { mockCandidates } from '@/lib/mockData';
+import { mockCandidates, all20Candidates } from '@/lib/mockData';
 import { startInterview } from '@/lib/api';
+import { CandidateProfile } from '@/lib/types';
 
 export default function LandingPage() {
   const router = useRouter();
   const [navigatingId, setNavigatingId] = useState<string | null>(null);
+  const [showAllModal, setShowAllModal] = useState<boolean>(false);
+  const [selectedCandidate, setSelectedCandidate] = useState<CandidateProfile>(mockCandidates[0]);
 
-  const handleStartInterview = async (candidateId: string) => {
-    setNavigatingId(candidateId);
+  const handleStartInterview = async (candidate: CandidateProfile) => {
+    setNavigatingId(candidate.id);
     try {
-      const candidate = mockCandidates.find(c => c.id === candidateId);
-      if (!candidate) {
-        throw new Error(`Candidate ${candidateId} not found`);
-      }
-
       // Generate a unique sessionId
-      const sessionId = `sess-${candidateId}-${Date.now()}`;
+      const sessionId = `sess-${candidate.id}-${Date.now()}`;
 
       // Call startInterview() with backend payload
       const response = await startInterview(sessionId, candidate.backendPayload);
@@ -36,15 +35,18 @@ export default function LandingPage() {
         }
       ];
       sessionStorage.setItem(`turns_${sessionId}`, JSON.stringify(initialTurns));
-      sessionStorage.setItem(`session_candidate_${sessionId}`, candidateId);
+      sessionStorage.setItem(`session_candidate_${sessionId}`, candidate.id);
+      sessionStorage.setItem(`candidate_profile_${sessionId}`, JSON.stringify(candidate));
+      if (response.currentTopic) sessionStorage.setItem(`topic_${sessionId}`, response.currentTopic);
+      if (response.progress) sessionStorage.setItem(`progress_${sessionId}`, response.progress);
+      if (response.questionNumber) sessionStorage.setItem(`question_${sessionId}`, String(response.questionNumber));
 
       // Navigate to the interview page
-      router.push(`/interview/${candidateId}?sessionId=${sessionId}`);
+      router.push(`/interview/${candidate.id}?sessionId=${sessionId}`);
     } catch (error) {
       console.error('Failed to start interview:', error);
-      // Fallback in case of server/tunnel issues
-      const fallbackSessionId = `sess-fallback-${candidateId}-${Date.now()}`;
-      router.push(`/interview/${candidateId}?sessionId=${fallbackSessionId}`);
+      const fallbackSessionId = `sess-fallback-${candidate.id}-${Date.now()}`;
+      router.push(`/interview/${candidate.id}?sessionId=${fallbackSessionId}`);
     } finally {
       setNavigatingId(null);
     }
@@ -52,185 +54,241 @@ export default function LandingPage() {
 
   return (
     <PageTransition className="min-h-screen flex flex-col bg-[#F8FAFC]">
-      {/* Top Navbar matching Image 4 */}
-      <header className="bg-[#151E28] text-white px-6 sm:px-12 py-4 flex items-center justify-between shadow-sm">
-        <div className="flex items-center space-x-2">
+      {/* Top Navbar Header */}
+      <header className="bg-[#151E28] text-white px-6 sm:px-12 py-4 flex items-center justify-between shadow-md border-b border-[#1E293B]">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#007A63] to-[#10B981] flex items-center justify-center font-black text-white text-lg shadow-sm">
+            IQ
+          </div>
           <span className="text-xl sm:text-2xl font-bold tracking-tight text-white">The Interview IQ</span>
+          <span className="hidden sm:inline-block bg-[#1E293B] text-[#10B981] text-xs font-semibold px-2.5 py-0.5 rounded-full border border-[#334155]">
+            Live Cloud AI
+          </span>
         </div>
 
         <div className="flex items-center space-x-6 text-sm font-medium text-[#CBD5E1]">
-          <Link href="#" className="hover:text-white transition-colors">Company</Link>
-          <Link href="#" className="hover:text-white transition-colors">Help Center</Link>
-          <div className="flex items-center space-x-3 text-white pl-2">
-            {/* Social Icons */}
-            <a href="#" className="hover:text-[#007A63] transition-colors" aria-label="Facebook">
-              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-              </svg>
-            </a>
-            <a href="#" className="hover:text-[#007A63] transition-colors" aria-label="LinkedIn">
-              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-              </svg>
-            </a>
-            <a href="#" className="hover:text-[#007A63] transition-colors" aria-label="Instagram">
-              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-              </svg>
-            </a>
-          </div>
+          <Link href="/docs" target="_blank" className="hover:text-white transition-colors">API Docs</Link>
+          <button 
+            onClick={() => setShowAllModal(true)} 
+            className="hover:text-[#10B981] transition-colors font-semibold"
+          >
+            All Candidates (20)
+          </button>
         </div>
       </header>
 
       {/* Main Container */}
       <div className="max-w-7xl mx-auto px-4 sm:px-8 py-8 space-y-10 flex-1 w-full">
         
-        {/* Hero Section matching Image 4 */}
-        <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm p-6 sm:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-          <div className="lg:col-span-7 space-y-6">
-            <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-[#0F172A] leading-tight">
-              The most advanced AI cohort agent
+        {/* Hero Section */}
+        <div className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm p-6 sm:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center relative overflow-hidden">
+          <div className="lg:col-span-8 space-y-5">
+            <div className="inline-flex items-center space-x-2 bg-[#E6F4F1] border border-[#007A63]/20 px-3 py-1 rounded-full text-xs font-bold text-[#007A63]">
+              <span className="w-2 h-2 rounded-full bg-[#007A63] animate-ping"></span>
+              <span>31-Day AI Cohort Grounded · Groq Llama 3.3 70B</span>
+            </div>
+            <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[#0F172A] leading-tight">
+              The Most Advanced AI Technical Interview Agent
             </h1>
-            <p className="text-base sm:text-lg text-[#475569] italic leading-relaxed">
-              Practice explaining the systems you built during the 31-day AI Cohort. This AI interviewer tailors questions to your missions, skipped topics, and learning signals. Get a realistic technical interview experience and clear feedback on where you stand.
+            <p className="text-base sm:text-lg text-[#475569] leading-relaxed">
+              Conduct autonomous, curriculum-grounded technical interviews tailored to real engineering missions, skipped syllabus days, and candidate performance signals. Powered by real-time RAG and adaptive follow-up reasoning.
             </p>
+            <div className="flex flex-wrap gap-4 pt-2">
+              <Button 
+                onClick={() => handleStartInterview(mockCandidates[0])}
+                disabled={navigatingId !== null}
+                className="bg-[#007A63] hover:bg-[#006250] text-white px-6 py-3 rounded-xl font-bold shadow-md shadow-[#007A63]/20 flex items-center space-x-2"
+              >
+                <span>{navigatingId === mockCandidates[0].id ? 'Starting Session...' : 'Start Featured Interview (Sarah Johnson)'}</span>
+                <span>▶</span>
+              </Button>
+              <button 
+                onClick={() => setShowAllModal(true)}
+                className="border-2 border-[#CBD5E1] hover:border-[#007A63] hover:text-[#007A63] text-[#475569] px-5 py-3 rounded-xl font-bold transition-colors"
+              >
+                Browse All 20 Candidates ▾
+              </button>
+            </div>
           </div>
 
-          <div className="lg:col-span-5 relative overflow-hidden rounded-xl h-64 sm:h-80 shadow-md">
-            <img
-              src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=1200&q=80"
-              alt="AI Cohort Candidate Interview"
-              className="w-full h-full object-cover object-center"
-            />
-            {/* Subtle Gradient Overlay on Left Edge to match design */}
-            <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-white via-white/40 to-transparent" />
+          <div className="lg:col-span-4 bg-gradient-to-br from-[#151E28] to-[#1E293B] rounded-2xl p-6 text-white border border-[#334155] shadow-lg space-y-4">
+            <div className="text-xs uppercase font-bold text-[#10B981] tracking-wider">Cloud Engine Status</div>
+            <div className="space-y-3 text-sm text-[#94A3B8]">
+              <div className="flex justify-between items-center pb-2 border-b border-[#334155]">
+                <span>LLM Engine</span>
+                <span className="font-semibold text-white">Llama-3.3-70B-Versatile</span>
+              </div>
+              <div className="flex justify-between items-center pb-2 border-b border-[#334155]">
+                <span>Knowledge Base</span>
+                <span className="font-semibold text-white">31-Day AI Cohort</span>
+              </div>
+              <div className="flex justify-between items-center pb-2 border-b border-[#334155]">
+                <span>Candidate Dataset</span>
+                <span className="font-semibold text-white">20 Real Profiles</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Evaluation Standard</span>
+                <span className="font-semibold text-[#10B981]">1-10 Rubric + Report</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Profile Selection Section matching Image 4 */}
+        {/* Candidate Selection Section */}
         <div className="space-y-6">
-          <h2 className="text-xl sm:text-2xl font-bold text-[#0F172A] tracking-tight">
-            Select Your Profile
-          </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold text-[#0F172A]">Featured AI Cohort Candidates</h2>
+              <p className="text-sm text-[#64748B]">Select a candidate profile to initialize an adaptive, syllabus-targeted technical interview.</p>
+            </div>
+            <button
+              onClick={() => setShowAllModal(true)}
+              className="text-sm font-bold text-[#007A63] hover:underline flex items-center space-x-1"
+            >
+              <span>View all 20 candidates</span>
+              <span>→</span>
+            </button>
+          </div>
 
+          {/* Grid of Candidate Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
-            {/* Candidate 1 */}
-            <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm p-6 flex flex-col justify-between space-y-6 hover:shadow-md transition-shadow">
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2 text-[#0F172A] font-bold text-base">
-                  <span className="text-[#007A63]">👤</span>
-                  <span>Candidate 1</span>
-                </div>
+            {mockCandidates.map((candidate, idx) => {
+              const isStarting = navigatingId === candidate.id;
+              return (
+                <div
+                  key={candidate.id}
+                  className="bg-white rounded-2xl border border-[#E2E8F0] shadow-sm hover:shadow-md transition-all duration-200 p-6 flex flex-col justify-between relative group hover:border-[#007A63]"
+                >
+                  <div className="space-y-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-11 h-11 rounded-full bg-[#E6F4F1] border-2 border-[#007A63] flex items-center justify-center font-bold text-[#007A63] text-base">
+                          {candidate.name.split(' ').map(n => n[0]).join('')}
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-[#0F172A] text-lg group-hover:text-[#007A63] transition-colors">
+                            {candidate.name}
+                          </h3>
+                          <p className="text-xs text-[#64748B] font-medium">{candidate.jobRole} · {candidate.yearsExperience || 5} yrs exp</p>
+                        </div>
+                      </div>
+                      <span className="bg-[#E6F4F1] text-[#007A63] text-xs font-bold px-2.5 py-1 rounded-full">
+                        CAND-00{idx + 1}
+                      </span>
+                    </div>
 
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-[#64748B]">Name:</span>
-                    <span className="font-semibold text-[#0F172A]">Alex Chen</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#64748B]">Progress:</span>
-                    <span className="font-bold text-[#007A63]">60%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#64748B]">Skipped Topic:</span>
-                    <span className="font-medium text-[#475569] text-right">System Design<br/>Data Structures</span>
-                  </div>
-                </div>
-              </div>
+                    <div className="space-y-2 pt-2 border-t border-[#F1F5F9]">
+                      <div className="flex justify-between text-xs text-[#64748B]">
+                        <span>Cohort Progress</span>
+                        <span className="font-bold text-[#0F172A]">{candidate.progressPercent}%</span>
+                      </div>
+                      <div className="w-full bg-[#E2E8F0] h-2 rounded-full overflow-hidden">
+                        <div 
+                          className="bg-[#007A63] h-full rounded-full transition-all duration-500" 
+                          style={{ width: `${candidate.progressPercent}%` }}
+                        />
+                      </div>
+                    </div>
 
-              <Button
-                variant="primary"
-                size="md"
-                className="w-full"
-                onClick={() => handleStartInterview('alex-chen')}
-              >
-                {navigatingId === 'alex-chen' ? 'Starting...' : 'START INTERVIEW'}
-              </Button>
-            </div>
+                    <div className="space-y-1.5 text-xs">
+                      <div className="text-[#64748B] font-semibold">Focus Topic / Initial Day:</div>
+                      <div className="text-[#0F172A] font-bold bg-[#F8FAFC] p-2 rounded-lg border border-[#E2E8F0]">
+                        {candidate.currentTopic}
+                      </div>
+                    </div>
 
-            {/* Candidate 2 */}
-            <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-sm p-6 flex flex-col justify-between space-y-6 hover:shadow-md transition-shadow">
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2 text-[#0F172A] font-bold text-base">
-                  <span className="text-[#007A63]">👤</span>
-                  <span>Candidate 2</span>
-                </div>
-
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-[#64748B]">Name:</span>
-                    <span className="font-semibold text-[#0F172A]">Jordan Smith</span>
+                    {candidate.skippedTopics.length > 0 && (
+                      <div className="space-y-1 text-xs">
+                        <div className="text-[#EF4444] font-semibold">Target Gap Area:</div>
+                        <div className="text-[#475569] text-xs line-clamp-1">
+                          {candidate.skippedTopics.join(', ')}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#64748B]">Progress:</span>
-                    <span className="font-bold text-[#007A63]">25%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#64748B]">Skipped Topic:</span>
-                    <span className="font-medium text-[#475569]">None</span>
-                  </div>
-                </div>
-              </div>
 
-              <Button
-                variant="primary"
-                size="md"
-                className="w-full"
-                onClick={() => handleStartInterview('jordan-smith')}
-              >
-                {navigatingId === 'jordan-smith' ? 'Starting...' : 'START INTERVIEW'}
-              </Button>
-            </div>
-
-            {/* Candidate 3 (Khushi - Active Session Profile) */}
-            <div className="bg-white rounded-xl border-2 border-[#007A63]/30 shadow-sm p-6 flex flex-col justify-between space-y-6 hover:shadow-md transition-shadow relative">
-              <div className="absolute top-3 right-3 bg-[#E6F4F1] text-[#007A63] text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                Active Session
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center space-x-2 text-[#0F172A] font-bold text-base">
-                  <span className="text-[#007A63]">👤</span>
-                  <span>Candidate 3</span>
-                </div>
-
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-[#64748B]">Name:</span>
-                    <span className="font-semibold text-[#0F172A]">Khushi Garg</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#64748B]">Progress:</span>
-                    <span className="font-bold text-[#007A63]">2 / 8 (25%)</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-[#64748B]">Skipped Topic:</span>
-                    <span className="font-medium text-[#475569] text-right">Binary Trees<br/>System Design Basics</span>
+                  <div className="pt-6">
+                    <Button
+                      onClick={() => handleStartInterview(candidate)}
+                      disabled={navigatingId !== null}
+                      className="w-full bg-[#007A63] hover:bg-[#006250] text-white py-2.5 rounded-xl font-bold transition-all flex items-center justify-center space-x-2"
+                    >
+                      <span>{isStarting ? 'Initializing...' : 'START INTERVIEW'}</span>
+                      {!isStarting && <span>▶</span>}
+                    </Button>
                   </div>
                 </div>
-              </div>
-
-              <Button
-                variant="primary"
-                size="md"
-                className="w-full"
-                onClick={() => handleStartInterview('khushi-garg')}
-              >
-                {navigatingId === 'khushi-garg' ? 'Starting...' : 'START INTERVIEW'}
-              </Button>
-            </div>
-
-            {/* Add Candidate Placeholder Card matching Image 4 */}
-            <div className="border-2 border-dashed border-[#CBD5E1] rounded-xl p-8 flex flex-col items-center justify-center space-y-3 text-[#94A3B8] hover:border-[#007A63] hover:text-[#007A63] cursor-pointer transition-colors group bg-white/50 min-h-[220px]">
-              <span className="text-3xl font-light group-hover:scale-110 transition-transform">+</span>
-              <span className="font-semibold text-sm">Add Candidate</span>
-            </div>
-
+              );
+            })}
           </div>
         </div>
-
       </div>
+
+      {/* Modal: All 20 Candidates Selector */}
+      {showAllModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-[#E2E8F0] overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-4 border-b border-[#E2E8F0] flex items-center justify-between bg-[#151E28] text-white">
+              <div>
+                <h3 className="text-xl font-bold">Select from 20 AI Cohort Candidates</h3>
+                <p className="text-xs text-[#CBD5E1]">Every candidate is grounded in real 31-day syllabus mission records.</p>
+              </div>
+              <button 
+                onClick={() => setShowAllModal(false)}
+                className="text-white hover:text-red-400 font-bold text-2xl px-2"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-4 divide-y divide-[#F1F5F9] flex-1">
+              {all20Candidates.map((c, i) => (
+                <div key={c.id} className="pt-4 first:pt-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-[#F8FAFC] p-3 rounded-xl transition-colors">
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-3">
+                      <span className="font-bold text-[#0F172A] text-base">{c.name}</span>
+                      <span className="text-xs bg-[#E6F4F1] text-[#007A63] font-bold px-2 py-0.5 rounded-full">
+                        {c.backendPayload.member.id}
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#64748B]">
+                      {c.jobRole} · {c.education || 'CS Degree'} · {c.yearsExperience || 0} years experience
+                    </p>
+                    <p className="text-xs text-[#007A63] font-medium">
+                      🎯 Target Topic: <strong>{c.currentTopic}</strong>
+                    </p>
+                  </div>
+
+                  <Button
+                    onClick={() => {
+                      setShowAllModal(false);
+                      handleStartInterview(c);
+                    }}
+                    disabled={navigatingId !== null}
+                    className="bg-[#007A63] hover:bg-[#006250] text-white text-xs px-4 py-2 rounded-lg font-bold shrink-0"
+                  >
+                    Start Interview ▶
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            <div className="px-6 py-3 border-t border-[#E2E8F0] bg-[#F8FAFC] flex justify-end">
+              <button 
+                onClick={() => setShowAllModal(false)}
+                className="text-sm font-semibold text-[#64748B] hover:text-[#0F172A]"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-[#E2E8F0] py-6 px-6 sm:px-12 text-center text-xs text-[#64748B]">
+        InterviewIQ AI — Autonomous AI Technical Interview Agent · 24/7 Cloud Engine on Render
+      </footer>
     </PageTransition>
   );
 }
